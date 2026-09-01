@@ -228,12 +228,13 @@
     return Math.ceil((alvo - hoje) / 86400000);
   }
   function statusPagamento(cliente) {
-    if (cliente.pago) return { cor: "var(--verde)", texto: "pago" };
-    const d = diasAteDia(cliente.diaPagamento);
-    if (d < 0) return { cor: "var(--vermelho)", texto: "atrasado" };
-    if (d <= 3) return { cor: "var(--laranja)", texto: "vence em " + d + "d" };
-    return { cor: "var(--cinza)", texto: "dia " + cliente.diaPagamento };
-  }
+  if (cliente.pago) return { cor: "var(--verde)", texto: "pago" };
+  const d = diasAteDia(cliente.diaPagamento);
+  if (d <= 0) return { cor: "var(--vermelho)", texto: d < 0 ? "atrasado" : "hoje" };
+  if (d === 1) return { cor: "var(--laranja)", texto: "amanhã" };
+  if (d === 2) return { cor: "var(--azul)", texto: "em 2d" };
+  return { cor: "var(--cinza)", texto: "dia " + cliente.diaPagamento };
+}
   function iniciais(nome) { return nome.trim().slice(0, 1).toUpperCase(); }
   function esc(s) {
     return String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
@@ -409,13 +410,13 @@
     return Math.round((alvo - hoje) / 86400000);
   }
   function statusTarefa(t) {
-    if (!t.prazo) return { cor: "var(--cinzaClaro)", texto: "" };
-    const d = diasAtePrazo(t.prazo);
-    if (d < 0) return { cor: "var(--vermelho)", texto: "atrasada" };
-    if (d === 0) return { cor: "var(--laranja)", texto: "hoje" };
-    if (d <= 2) return { cor: "var(--laranja)", texto: "em " + d + "d" };
-    return { cor: "var(--cinza)", texto: new Date(t.prazo).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" }) };
-  }
+  if (!t.prazo) return { cor: "var(--cinzaClaro)", texto: "" };
+  const d = diasAtePrazo(t.prazo);
+  if (d <= 0) return { cor: "var(--vermelho)", texto: d < 0 ? "atrasada" : "hoje" };
+  if (d === 1) return { cor: "var(--laranja)", texto: "amanhã" };
+  if (d === 2) return { cor: "var(--azul)", texto: "em 2d" };
+  return { cor: "var(--cinza)", texto: new Date(t.prazo).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" }) };
+}
 
   // ---------- Meta ----------
   function salvarMeta(valor) {
