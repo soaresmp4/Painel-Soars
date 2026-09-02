@@ -83,9 +83,17 @@
   .custos-card { margin-bottom:12px; }
   .custos-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:9px; }
   .despesa-row { display:flex; justify-content:space-between; align-items:center; font-size:11px; padding:8px 11px; background:var(--inputBg); border-radius:10px; }
-  .tarefa-row { display:flex; justify-content:space-between; align-items:center; padding:9px 11px; background:var(--inputBg); border-radius:10px; margin-bottom:6px; }
-  .acao-concluir-tarefa:hover { background:var(--verde); border-color:var(--verde); }
+
+  .tarefas-notas-grid { display:grid; grid-template-columns:1fr 1fr; gap:11px; margin-bottom:12px; align-items:stretch; }
+  .tarefa-row { display:flex; align-items:center; gap:10px; padding:9px 11px; background:var(--inputBg); border-radius:10px; margin-bottom:6px; }
+  .tarefa-checkbox { width:19px; height:19px; border-radius:5px; border:2px solid var(--cinzaClaro); background:transparent; cursor:pointer; flex-shrink:0; display:flex; align-items:center; justify-content:center; padding:0; }
+  .tarefa-checkbox.marcada { background:var(--verde); border-color:var(--verde); }
+  .tarefa-texto { font-size:12px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; cursor:pointer; flex:1; text-align:left; background:transparent; border:none; color:var(--texto); padding:0; }
+  .tarefa-texto.concluida { text-decoration:line-through; color:var(--cinzaClaro); }
   .tarefas-add-row { display:flex; gap:7px; margin-top:12px; }
+  .anotacao-row { display:flex; justify-content:space-between; align-items:flex-start; gap:8px; padding:9px 11px; background:var(--inputBg); border-radius:10px; margin-bottom:6px; }
+  .anotacao-texto { font-size:11.5px; line-height:1.5; white-space:pre-wrap; word-break:break-word; flex:1; }
+  .anotacoes-add-row { display:flex; gap:7px; margin-top:12px; }
 
   .middle-grid { display:grid; grid-template-columns:1.1fr 1fr 1fr; gap:11px; margin-bottom:12px; align-items:stretch; }
 
@@ -147,6 +155,7 @@
   @media (max-width: 900px) {
     .kpi-grid { grid-template-columns:1fr 1fr; }
     .middle-grid { grid-template-columns:1fr; }
+    .tarefas-notas-grid { grid-template-columns:1fr; }
   }
   @media (max-width: 560px) {
     #app { padding: 18px; }
@@ -172,6 +181,7 @@
   const K_META = "soars-meta-v1";
   const K_TEMA = "soars-tema-v1";
   const K_TAREFAS = "soars-tarefas-v1";
+  const K_ANOTACOES = "soars-anotacoes-v1";
 
   const SEED_CLIENTES = [
     { id: "caio", nome: "Caio", totalVideos: 30, entregues: 19, valorTotal: 1500, diaPagamento: 10, pago: false, notas: "" },
@@ -185,6 +195,7 @@
     conclusoes: lerJSON(K_CONCLUSOES, []),
     despesas: lerJSON(K_DESPESAS, []),
     tarefas: lerJSON(K_TAREFAS, []),
+    anotacoes: lerJSON(K_ANOTACOES, []),
     meta: Number(localStorage.getItem(K_META)) || 5000,
     tema: localStorage.getItem(K_TEMA) || "escuro",
     ultimoSalvo: new Date().toISOString(),
@@ -228,13 +239,13 @@
     return Math.ceil((alvo - hoje) / 86400000);
   }
   function statusPagamento(cliente) {
-  if (cliente.pago) return { cor: "var(--verde)", texto: "pago" };
-  const d = diasAteDia(cliente.diaPagamento);
-  if (d <= 0) return { cor: "var(--vermelho)", texto: d < 0 ? "atrasado" : "hoje" };
-  if (d === 1) return { cor: "var(--laranja)", texto: "amanhã" };
-  if (d === 2) return { cor: "var(--azul)", texto: "em 2d" };
-  return { cor: "var(--cinza)", texto: "dia " + cliente.diaPagamento };
-}
+    if (cliente.pago) return { cor: "var(--verde)", texto: "pago" };
+    const d = diasAteDia(cliente.diaPagamento);
+    if (d <= 0) return { cor: "var(--vermelho)", texto: d < 0 ? "atrasado" : "hoje" };
+    if (d === 1) return { cor: "var(--laranja)", texto: "amanhã" };
+    if (d === 2) return { cor: "var(--azul)", texto: "em 2d" };
+    return { cor: "var(--cinza)", texto: "dia " + cliente.diaPagamento };
+  }
   function iniciais(nome) { return nome.trim().slice(0, 1).toUpperCase(); }
   function esc(s) {
     return String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
@@ -250,6 +261,14 @@
     if (!m) return null;
     const dia = Number(m[1]), mes = Number(m[2]), ano = Number(m[3]), hora = Number(m[4]), min = Number(m[5]);
     const d = new Date(ano, mes - 1, dia, hora, min);
+    if (d.getFullYear() !== ano || d.getMonth() !== mes - 1 || d.getDate() !== dia) return null;
+    return d;
+  }
+  function parseDataBRSimples(texto) {
+    const m = texto.trim().match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+    if (!m) return null;
+    const dia = Number(m[1]), mes = Number(m[2]), ano = Number(m[3]);
+    const d = new Date(ano, mes - 1, dia);
     if (d.getFullYear() !== ano || d.getMonth() !== mes - 1 || d.getDate() !== dia) return null;
     return d;
   }
@@ -387,21 +406,36 @@
     if (!texto.trim()) return;
     let prazoISO = null;
     if (prazoTexto && prazoTexto.trim()) {
-      const m = prazoTexto.trim().match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
-      if (m) {
-        const dia = Number(m[1]), mes = Number(m[2]), ano = Number(m[3]);
-        const d = new Date(ano, mes - 1, dia);
-        if (d.getFullYear() === ano && d.getMonth() === mes - 1 && d.getDate() === dia) prazoISO = d.toISOString();
-      }
+      const d = parseDataBRSimples(prazoTexto);
+      if (d) prazoISO = d.toISOString();
     }
-    state.tarefas.push({ id: uid(), texto: texto.trim(), prazo: prazoISO, criadaEm: new Date().toISOString() });
+    state.tarefas.push({ id: uid(), texto: texto.trim(), prazo: prazoISO, concluida: false, criadaEm: new Date().toISOString() });
     salvar(K_TAREFAS, state.tarefas);
     render();
   }
-  function concluirTarefa(id) {
+  function alternarTarefa(id) {
+    const t = state.tarefas.find((x) => x.id === id); if (!t) return;
+    t.concluida = !t.concluida;
+    salvar(K_TAREFAS, state.tarefas);
+    if (t.concluida) toast("Tarefa concluída", "var(--verde)");
+    render();
+  }
+  function editarTarefa(id, dados) {
+    const t = state.tarefas.find((x) => x.id === id); if (!t) return;
+    t.texto = dados.texto.trim() || t.texto;
+    let prazoISO = null;
+    if (dados.prazo && dados.prazo.trim()) {
+      const d = parseDataBRSimples(dados.prazo);
+      if (d) prazoISO = d.toISOString();
+    }
+    t.prazo = prazoISO;
+    salvar(K_TAREFAS, state.tarefas);
+    toast("Tarefa atualizada", "var(--texto)");
+    render();
+  }
+  function removerTarefa(id) {
     state.tarefas = state.tarefas.filter((t) => t.id !== id);
     salvar(K_TAREFAS, state.tarefas);
-    toast("Tarefa concluída", "var(--verde)");
     render();
   }
   function diasAtePrazo(prazoISO) {
@@ -410,13 +444,26 @@
     return Math.round((alvo - hoje) / 86400000);
   }
   function statusTarefa(t) {
-  if (!t.prazo) return { cor: "var(--cinzaClaro)", texto: "" };
-  const d = diasAtePrazo(t.prazo);
-  if (d <= 0) return { cor: "var(--vermelho)", texto: d < 0 ? "atrasada" : "hoje" };
-  if (d === 1) return { cor: "var(--laranja)", texto: "amanhã" };
-  if (d === 2) return { cor: "var(--azul)", texto: "em 2d" };
-  return { cor: "var(--cinza)", texto: new Date(t.prazo).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" }) };
-}
+    if (!t.prazo) return { cor: "var(--cinzaClaro)", texto: "" };
+    const d = diasAtePrazo(t.prazo);
+    if (d <= 0) return { cor: "var(--vermelho)", texto: d < 0 ? "atrasada" : "hoje" };
+    if (d === 1) return { cor: "var(--laranja)", texto: "amanhã" };
+    if (d === 2) return { cor: "var(--azul)", texto: "em 2d" };
+    return { cor: "var(--cinza)", texto: new Date(t.prazo).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" }) };
+  }
+
+  // ---------- Anotações rápidas ----------
+  function adicionarAnotacao(texto) {
+    if (!texto.trim()) return;
+    state.anotacoes.unshift({ id: uid(), texto: texto.trim(), quando: new Date().toISOString() });
+    salvar(K_ANOTACOES, state.anotacoes);
+    render();
+  }
+  function removerAnotacao(id) {
+    state.anotacoes = state.anotacoes.filter((a) => a.id !== id);
+    salvar(K_ANOTACOES, state.anotacoes);
+    render();
+  }
 
   // ---------- Meta ----------
   function salvarMeta(valor) {
@@ -441,7 +488,8 @@
     localStorage.removeItem(K_DESPESAS);
     localStorage.removeItem(K_META);
     localStorage.removeItem(K_TAREFAS);
-    state.clientes = []; state.historico = []; state.conclusoes = []; state.despesas = []; state.tarefas = []; state.meta = 5000;
+    localStorage.removeItem(K_ANOTACOES);
+    state.clientes = []; state.historico = []; state.conclusoes = []; state.despesas = []; state.tarefas = []; state.anotacoes = []; state.meta = 5000;
     state.confirmarReset = false;
     toast("Painel resetado", "var(--vermelho)");
     render();
@@ -457,7 +505,7 @@
     URL.revokeObjectURL(url);
   }
   function baixarBackup() {
-    const dados = { clientes: state.clientes, historico: state.historico, conclusoes: state.conclusoes, despesas: state.despesas, tarefas: state.tarefas, meta: state.meta, tema: state.tema, versao: 1, exportadoEm: new Date().toISOString() };
+    const dados = { clientes: state.clientes, historico: state.historico, conclusoes: state.conclusoes, despesas: state.despesas, tarefas: state.tarefas, anotacoes: state.anotacoes, meta: state.meta, tema: state.tema, versao: 2, exportadoEm: new Date().toISOString() };
     baixarArquivo("backup-soars-" + new Date().toISOString().slice(0, 10) + ".json", JSON.stringify(dados, null, 2), "application/json");
     toast("Backup baixado", "var(--texto)");
   }
@@ -471,6 +519,7 @@
         if (dados.conclusoes) { state.conclusoes = dados.conclusoes; salvar(K_CONCLUSOES, state.conclusoes); }
         if (dados.despesas) { state.despesas = dados.despesas; salvar(K_DESPESAS, state.despesas); }
         if (dados.tarefas) { state.tarefas = dados.tarefas; salvar(K_TAREFAS, state.tarefas); }
+        if (dados.anotacoes) { state.anotacoes = dados.anotacoes; salvar(K_ANOTACOES, state.anotacoes); }
         if (typeof dados.meta === "number") { state.meta = dados.meta; salvar(K_META, String(dados.meta)); }
         toast("Backup importado com sucesso", "var(--verde)");
         render();
@@ -505,6 +554,9 @@
   // ---------- Renderização ----------
   function iconeLapis(preenchido) {
     return '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="' + (preenchido ? "var(--destaque)" : "var(--cinzaClaro)") + '" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>';
+  }
+  function iconeCheck() {
+    return '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--destaqueTexto)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
   }
 
   function renderAtividade() {
@@ -683,8 +735,9 @@
   }
 
   function renderTarefas() {
-    if (state.tarefas.length === 0) return '<div style="font-size:11px;color:var(--cinzaClaro);">nenhuma tarefa pendente — as que você adicionar aparecem aqui até você concluir.</div>';
+    if (state.tarefas.length === 0) return '<div style="font-size:11px;color:var(--cinzaClaro);">nenhuma tarefa pendente — as que você adicionar aparecem aqui.</div>';
     const lista = [...state.tarefas].sort((a, b) => {
+      if (a.concluida !== b.concluida) return a.concluida ? 1 : -1;
       if (!a.prazo && !b.prazo) return 0;
       if (!a.prazo) return 1;
       if (!b.prazo) return -1;
@@ -692,12 +745,20 @@
     });
     return lista.map((t) => {
       const st = statusTarefa(t);
-      return '<div class="tarefa-row"><div style="display:flex;align-items:center;gap:10px;min-width:0;">' +
-        '<button class="acao-concluir-tarefa" data-id="' + esc(t.id) + '" title="Marcar como concluída" style="width:20px;height:20px;border-radius:50%;border:2px solid var(--cinzaClaro);background:transparent;cursor:pointer;flex-shrink:0;"></button>' +
-        '<span style="font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + esc(t.texto) + '</span></div>' +
-        (st.texto ? '<span class="status-pill num" style="color:' + st.cor + ';flex-shrink:0;margin-left:8px;font-size:9.5px;">' + st.texto + '</span>' : '') +
+      return '<div class="tarefa-row">' +
+        '<button class="tarefa-checkbox acao-alternar-tarefa' + (t.concluida ? " marcada" : "") + '" data-id="' + esc(t.id) + '" title="Marcar como concluída">' + (t.concluida ? iconeCheck() : "") + '</button>' +
+        '<button class="tarefa-texto acao-editar-tarefa' + (t.concluida ? " concluida" : "") + '" data-id="' + esc(t.id) + '">' + esc(t.texto) + '</button>' +
+        (st.texto && !t.concluida ? '<span class="status-pill num" style="color:' + st.cor + ';flex-shrink:0;font-size:9.5px;">' + st.texto + '</span>' : '') +
         '</div>';
     }).join("");
+  }
+
+  function renderAnotacoes() {
+    if (state.anotacoes.length === 0) return '<div style="font-size:11px;color:var(--cinzaClaro);">nenhuma anotação ainda — use esse espaço como bloco de notas rápido.</div>';
+    return state.anotacoes.map((a) =>
+      '<div class="anotacao-row"><span class="anotacao-texto">' + esc(a.texto) + '</span>' +
+      '<button class="acao-remover-anotacao" data-id="' + esc(a.id) + '" style="background:transparent;border:none;color:var(--cinzaClaro);font-size:13px;cursor:pointer;flex-shrink:0;">✕</button></div>'
+    ).join("");
   }
 
   function renderDespesas() {
@@ -756,14 +817,22 @@
     html += '<div class="kpi kpi-normal"><div class="kpi-label">PRODUÇÃO</div><strong class="num kpi-value">' + totalEntregues + '/' + totalVideos + '</strong><span class="kpi-sub">' + (totalVideos > 0 ? Math.round((totalEntregues / totalVideos) * 100) : 0) + '% concluído</span></div>';
     html += '</section>';
 
-    // Tarefas
-    html += '<section class="card" style="margin-bottom:12px;"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">' +
-      '<h2 class="heading section-title">Tarefas</h2><span class="section-sub">' + state.tarefas.length + ' pendente' + (state.tarefas.length !== 1 ? "s" : "") + '</span></div>';
+    // Tarefas + Anotações rápidas
+    html += '<section class="tarefas-notas-grid">';
+    html += '<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">' +
+      '<h2 class="heading section-title">Tarefas</h2><span class="section-sub">' + state.tarefas.filter((t) => !t.concluida).length + ' pendente' + (state.tarefas.filter((t) => !t.concluida).length !== 1 ? "s" : "") + '</span></div>';
     html += renderTarefas();
     html += '<div class="tarefas-add-row">' +
       '<input class="input-field" id="tarefa-texto" placeholder="o que você precisa fazer?" style="flex:2;">' +
       '<input class="input-field" id="tarefa-prazo" placeholder="prazo (opcional) DD/MM/AAAA" style="flex:1;">' +
-      '<button class="btn btn-dark" id="tarefa-add">+</button></div></section>';
+      '<button class="btn btn-dark" id="tarefa-add">+</button></div></div>';
+    html += '<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">' +
+      '<h2 class="heading section-title">Anotações rápidas</h2><span class="section-sub">' + state.anotacoes.length + '</span></div>';
+    html += renderAnotacoes();
+    html += '<div class="anotacoes-add-row">' +
+      '<input class="input-field" id="anotacao-texto" placeholder="anote algo rápido...">' +
+      '<button class="btn btn-dark" id="anotacao-add">+</button></div></div>';
+    html += '</section>';
 
     // Meta
     html += '<section class="card meta-card"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">' +
@@ -841,7 +910,18 @@
     on("#tarefa-add", "click", addTarefaFn);
     on("#tarefa-texto", "keydown", (e) => { if (e.key === "Enter") addTarefaFn(); });
     on("#tarefa-prazo", "keydown", (e) => { if (e.key === "Enter") addTarefaFn(); });
-    on(".acao-concluir-tarefa", "click", (e) => concluirTarefa(e.currentTarget.dataset.id));
+    on(".acao-alternar-tarefa", "click", (e) => alternarTarefa(e.currentTarget.dataset.id));
+    on(".acao-editar-tarefa", "click", (e) => abrirModalEditarTarefa(e.currentTarget.dataset.id));
+
+    const addAnotacaoFn = () => {
+      const texto = document.getElementById("anotacao-texto").value;
+      if (!texto.trim()) return;
+      adicionarAnotacao(texto);
+    };
+    on("#anotacao-add", "click", addAnotacaoFn);
+    on("#anotacao-texto", "keydown", (e) => { if (e.key === "Enter") addAnotacaoFn(); });
+    on(".acao-remover-anotacao", "click", (e) => removerAnotacao(e.currentTarget.dataset.id));
+
     on("#cal-mes-anterior", "click", () => { state.calMes--; if (state.calMes < 0) { state.calMes = 11; state.calAno--; } render(); });
     on("#cal-mes-proximo", "click", () => { state.calMes++; if (state.calMes > 11) { state.calMes = 0; state.calAno++; } render(); });
 
@@ -864,8 +944,6 @@
     on(".acao-nota", "click", (e) => abrirModalNota(e.currentTarget.dataset.id, e.currentTarget.dataset.nota || ""));
     on(".acao-data", "click", (e) => abrirModalData(e.currentTarget.dataset.id, e.currentTarget.dataset.quando));
 
-    // esconder chip de nota ao sair do hover (delegado no container do histórico)
-    const histWrap = app.querySelector(".hist-row") ? app : null;
     app.addEventListener("mouseleave", (e) => {
       if (state.notaHoverId !== null) { state.notaHoverId = null; render(); }
     }, true);
@@ -920,6 +998,25 @@
           fecharModal();
         });
         document.getElementById("ec-remover").addEventListener("click", () => { removerCliente(id); fecharModal(); });
+      }
+    );
+  }
+
+  function abrirModalEditarTarefa(id) {
+    const t = state.tarefas.find((x) => x.id === id); if (!t) return;
+    abrirModal("Editar tarefa",
+      '<div style="display:flex;flex-direction:column;gap:9px;">' +
+      '<input class="input-field" id="et-texto" value="' + esc(t.texto) + '" placeholder="o que você precisa fazer?">' +
+      '<input class="input-field" id="et-prazo" value="' + (t.prazo ? esc(new Date(t.prazo).toLocaleDateString("pt-BR")) : "") + '" placeholder="prazo (opcional) DD/MM/AAAA">' +
+      '<div style="display:flex;gap:8px;margin-top:4px;">' +
+      '<button class="btn btn-dark" id="et-salvar" style="flex:1;">salvar</button>' +
+      '<button class="btn" id="et-remover" style="color:var(--vermelho);">remover</button></div></div>',
+      () => {
+        document.getElementById("et-salvar").addEventListener("click", () => {
+          editarTarefa(id, { texto: document.getElementById("et-texto").value, prazo: document.getElementById("et-prazo").value });
+          fecharModal();
+        });
+        document.getElementById("et-remover").addEventListener("click", () => { removerTarefa(id); fecharModal(); });
       }
     );
   }
