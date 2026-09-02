@@ -737,7 +737,6 @@
   function renderTarefas() {
     if (state.tarefas.length === 0) return '<div style="font-size:11px;color:var(--cinzaClaro);">nenhuma tarefa pendente — as que você adicionar aparecem aqui.</div>';
     const lista = [...state.tarefas].sort((a, b) => {
-      if (a.concluida !== b.concluida) return a.concluida ? 1 : -1;
       if (!a.prazo && !b.prazo) return 0;
       if (!a.prazo) return 1;
       if (!b.prazo) return -1;
