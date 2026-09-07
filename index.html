@@ -209,6 +209,19 @@
     calAno: new Date().getFullYear(),
   };
 
+  // Migração: clientes salvos antes do sistema de cores não têm o campo "cor".
+  // Atribui automaticamente na primeira vez que o painel carregar.
+  (function migrarCoresClientes() {
+    let mudou = false;
+    state.clientes.forEach((c, i) => {
+      if (!c.cor) {
+        c.cor = PALETA_CORES_CLIENTE[i % PALETA_CORES_CLIENTE.length];
+        mudou = true;
+      }
+    });
+    if (mudou) salvar(K_CLIENTES, state.clientes);
+  })();
+
   function lerJSON(chave, padrao) {
     try {
       const v = localStorage.getItem(chave);
