@@ -11,7 +11,7 @@
     --bg:#000000; --card:#111113; --cardHover:#17171A;
     --texto:#F5F5F5; --cinza:#98989D; --cinzaClaro:#5A5A5E; --inputBg:#0C0C0E;
     --destaque:#FFFFFF; --destaqueTexto:#000000;
-    --verde:#32D74B; --laranja:#FF9F0A; --vermelho:#FF453A; --azul:#0A84FF;
+    --verde:#32D74B; --laranja:#FF9F0A; --vermelho:#FF453A; --azul:#0A84FF; --amarelo:#FFD60A;
     --sombraCard: 0 1px 0 rgba(255,255,255,0.05) inset, 0 12px 32px -16px rgba(0,0,0,0.7);
     --sombraFlutuante: 0 20px 50px -12px rgba(0,0,0,0.7);
     --divisor: rgba(255,255,255,0.08);
@@ -20,7 +20,7 @@
     --bg:#F2F2F5; --card:#FFFFFF; --cardHover:#FBFBFD;
     --texto:#1D1D1F; --cinza:#86868B; --cinzaClaro:#C6C6C9; --inputBg:#F5F5F7;
     --destaque:#1D1D1F; --destaqueTexto:#FFFFFF;
-    --verde:#30B350; --laranja:#E6890C; --vermelho:#E0362C; --azul:#0071E3;
+    --verde:#30B350; --laranja:#E6890C; --vermelho:#E0362C; --azul:#0071E3; --amarelo:#D9A400;
     --sombraCard: 0 1px 0 rgba(255,255,255,0.6) inset, 0 12px 32px -18px rgba(0,0,0,0.16);
     --sombraFlutuante: 0 24px 60px -14px rgba(0,0,0,0.22);
     --divisor: rgba(0,0,0,0.07);
@@ -473,9 +473,12 @@
   function statusTarefa(t) {
     if (!t.prazo) return { cor: "var(--cinzaClaro)", texto: "" };
     const d = diasAtePrazo(t.prazo);
-    if (d <= 0) return { cor: "var(--vermelho)", texto: d < 0 ? "atrasada" : "hoje" };
+    if (d < 0) return { cor: "var(--vermelho)", texto: "atrasada" };
+    if (d === 0) return { cor: "var(--vermelho)", texto: "hoje" };
     if (d === 1) return { cor: "var(--laranja)", texto: "amanhã" };
-    if (d === 2) return { cor: "var(--azul)", texto: "em 2d" };
+    if (d === 2) return { cor: "var(--amarelo)", texto: "em 2d" };
+    if (d === 3) return { cor: "var(--verde)", texto: "em 3d" };
+    if (d === 4) return { cor: "var(--azul)", texto: "em 4d" };
     return { cor: "var(--cinza)", texto: new Date(t.prazo).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" }) };
   }
 
