@@ -792,9 +792,44 @@
   function mesIgualOuDepois(a, b) {
     return String(a).localeCompare(String(b)) >= 0;
   }
+  function garantirEstruturaDespesas() {
+    let mudou = false;
+    state.despesas.forEach(d => {
+      if (!d.dataCompra) { d.dataCompra = d.quando; mudou = true; }
+      if (!d.dataPagamento) { d.dataPagamento = d.quando; mudou = true; }
+      if (!d.formaPagamento) { d.formaPagamento = 'conta'; mudou = true; }
+    });
+    garantirFinanceiro();
+    state.financeiro.despesasFixas.forEach(f => {
+      if (!f.diaCompra) { f.diaCompra = Number(f.dia) || 1; mudou = true; }
+      if (!f.diaPagamento) { f.diaPagamento = Number(f.dia) || f.diaCompra || 1; mudou = true; }
+      if (!f.formaPagamento) { f.formaPagamento = 'conta'; mudou = true; }
+    });
+    if (mudou) { salvar(K_DESPESAS, state.despesas); salvarFinanceiro(); }
+  }
+  garantirEstruturaDespesas();
+
+  function dataPagamentoDaDespesa(d) { return d.dataPagamento || d.quando || null; }
+  function dataCompraDaDespesa(d) { return d.dataCompra || d.quando || null; }
+  function dataFixaPagamentoNoMes(fixa, chave) {
+    const [ano, mes] = chave.split('-').map(Number);
+    const ultimoDia = new Date(ano, mes, 0).getDate();
+    const dia = Math.min(Math.max(Number(fixa.diaPagamento || fixa.dia) || 1, 1), ultimoDia);
+    return new Date(ano, mes - 1, dia, 12, 0, 0).toISOString();
+  }
+  function dataFixaCompraParaPagamento(fixa, chave) {
+    const [ano, mes] = chave.split('-').map(Number);
+    const diaCompra = Math.max(Number(fixa.diaCompra || fixa.dia) || 1, 1);
+    const diaPagamento = Math.max(Number(fixa.diaPagamento || fixa.dia) || 1, 1);
+    const deslocaMes = diaCompra > diaPagamento ? -1 : 0;
+    const base = new Date(ano, mes - 1 + deslocaMes, 1);
+    const ultimoDia = new Date(base.getFullYear(), base.getMonth() + 1, 0).getDate();
+    const dia = Math.min(diaCompra, ultimoDia);
+    return new Date(base.getFullYear(), base.getMonth(), dia, 12, 0, 0).toISOString();
+  }
   function despesasDoMesFinanceiro(chave) {
     const reais = state.despesas
-      .filter(d => pertenceAoMesFinanceiro(d.quando, chave))
+      .filter(d => pertenceAoMesFinanceiro(dataPagamentoDaDespesa(d), chave))
       .map(d => ({ ...d, origem: 'registro' }));
 
     garantirFinanceiro();
@@ -804,44 +839,55 @@
       if (!f.ativo) return;
       if (!mesIgualOuDepois(chave, f.inicio)) return;
       if (idsComRegistro.has(f.id)) return;
+      const dataPagamento = dataFixaPagamentoNoMes(f, chave);
+      const dataCompra = dataFixaCompraParaPagamento(f, chave);
       virtuais.push({
         id: 'fixa-' + f.id + '-' + chave,
         fixaId: f.id,
         nome: f.nome,
         valor: Number(f.valor) || 0,
         categoria: f.categoria || 'Fixa',
-        quando: dataFixaNoMes(f, chave),
+        quando: dataPagamento,
+        dataCompra,
+        dataPagamento,
+        formaPagamento: f.formaPagamento || 'conta',
         fixa: true,
         virtual: true,
         origem: 'recorrente'
       });
     });
-    return [...reais, ...virtuais].sort((a,b) => new Date(b.quando) - new Date(a.quando));
+    return [...reais, ...virtuais].sort((a,b) => new Date(dataPagamentoDaDespesa(b)) - new Date(dataPagamentoDaDespesa(a)));
   }
   function adicionarDespesa(dados) {
-    const dataBase = dados.quando ? new Date(dados.quando + 'T12:00:00') : new Date();
-    const quando = Number.isNaN(dataBase.getTime()) ? new Date().toISOString() : dataBase.toISOString();
+    const compraBase = dados.dataCompra ? new Date(dados.dataCompra + 'T12:00:00') : new Date();
+    const pagamentoBase = dados.dataPagamento ? new Date(dados.dataPagamento + 'T12:00:00') : compraBase;
+    const dataCompra = Number.isNaN(compraBase.getTime()) ? new Date().toISOString() : compraBase.toISOString();
+    const dataPagamento = Number.isNaN(pagamentoBase.getTime()) ? dataCompra : pagamentoBase.toISOString();
     if (dados.fixa) {
       const fixa = {
         id: 'fixa-' + uid(),
         nome: dados.nome.trim(),
         valor: Number(dados.valor) || 0,
         categoria: dados.categoria.trim() || 'Fixa',
-        dia: dataBase.getDate(),
-        inicio: chaveMesDaDataISO(quando),
+        diaCompra: compraBase.getDate(),
+        diaPagamento: pagamentoBase.getDate(),
+        // Mantém o campo antigo para compatibilidade. Ele representa o dia do pagamento.
+        dia: pagamentoBase.getDate(),
+        formaPagamento: dados.formaPagamento || 'conta',
+        inicio: chaveMesDaDataISO(dataPagamento),
         ativo: true
       };
       garantirFinanceiro();
       state.financeiro.despesasFixas.push(fixa);
-      state.despesas.unshift({ id: uid(), fixaId: fixa.id, fixa: true, nome: fixa.nome, valor: fixa.valor, categoria: fixa.categoria, quando });
+      state.despesas.unshift({ id: uid(), fixaId: fixa.id, fixa: true, nome: fixa.nome, valor: fixa.valor, categoria: fixa.categoria, formaPagamento: fixa.formaPagamento, quando: dataPagamento, dataCompra, dataPagamento });
       salvarFinanceiro();
       salvar(K_DESPESAS, state.despesas);
       toast('Despesa fixa configurada · repete todos os meses', 'var(--vermelho)');
     } else {
-      const d = { id: uid(), nome: dados.nome.trim(), valor: Number(dados.valor) || 0, categoria: dados.categoria.trim() || 'Outros', quando };
+      const d = { id: uid(), nome: dados.nome.trim(), valor: Number(dados.valor) || 0, categoria: dados.categoria.trim() || 'Outros', formaPagamento: dados.formaPagamento || 'conta', quando: dataPagamento, dataCompra, dataPagamento };
       state.despesas.unshift(d);
       salvar(K_DESPESAS, state.despesas);
-      toast('Despesa "' + d.nome + '" adicionada', 'var(--vermelho)');
+      toast('Despesa \"' + d.nome + '\" adicionada', 'var(--vermelho)');
     }
     render();
   }
@@ -851,22 +897,17 @@
     d.nome = dados.nome.trim() || d.nome;
     d.valor = Number(dados.valor) || d.valor;
     d.categoria = dados.categoria.trim() || 'Outros';
-    if (dados.quando) {
-      const dt = new Date(dados.quando + 'T12:00:00');
-      if (!Number.isNaN(dt.getTime())) d.quando = dt.toISOString();
+    d.formaPagamento = dados.formaPagamento || d.formaPagamento || 'conta';
+    if (dados.dataCompra) {
+      const dtCompra = new Date(dados.dataCompra + 'T12:00:00');
+      if (!Number.isNaN(dtCompra.getTime())) d.dataCompra = dtCompra.toISOString();
     }
-    if (d.fixaId) {
-      const fixa = despesaFixaDoId(d.fixaId);
-      if (fixa) {
-        fixa.nome = d.nome;
-        fixa.valor = d.valor;
-        fixa.categoria = d.categoria || 'Fixa';
-        if (dados.fixaDia) fixa.dia = Number(dados.fixaDia) || fixa.dia;
-      }
-      salvarFinanceiro();
+    if (dados.dataPagamento) {
+      const dtPagamento = new Date(dados.dataPagamento + 'T12:00:00');
+      if (!Number.isNaN(dtPagamento.getTime())) { d.dataPagamento = dtPagamento.toISOString(); d.quando = d.dataPagamento; }
     }
     salvar(K_DESPESAS, state.despesas);
-    toast(d.fixaId ? 'Despesa fixa atualizada · os próximos meses acompanham' : 'Despesa atualizada', 'var(--texto)');
+    toast('Despesa atualizada', 'var(--texto)');
     render();
   }
   function editarDespesaFixa(fixaId, dados) {
@@ -875,19 +916,22 @@
     fixa.nome = dados.nome.trim() || fixa.nome;
     fixa.valor = Number(dados.valor) || fixa.valor;
     fixa.categoria = dados.categoria.trim() || 'Fixa';
-    fixa.dia = Number(dados.dia) || fixa.dia;
+    fixa.formaPagamento = dados.formaPagamento || fixa.formaPagamento || 'conta';
+    fixa.diaCompra = Number(dados.diaCompra) || fixa.diaCompra || fixa.dia || 1;
+    fixa.diaPagamento = Number(dados.diaPagamento) || fixa.diaPagamento || fixa.dia || 1;
+    fixa.dia = fixa.diaPagamento;
     salvarFinanceiro();
     // Atualiza o lançamento real do mês atual/selecionado, se existir.
     if (dados.chave) {
-      const ocorrencia = state.despesas.find(d => d.fixaId === fixaId && pertenceAoMesFinanceiro(d.quando, dados.chave));
+      const ocorrencia = state.despesas.find(d => d.fixaId === fixaId && pertenceAoMesFinanceiro(dataPagamentoDaDespesa(d), dados.chave));
       if (ocorrencia) {
         ocorrencia.nome = fixa.nome;
         ocorrencia.valor = fixa.valor;
         ocorrencia.categoria = fixa.categoria;
-        const [ano, mes] = dados.chave.split('-').map(Number);
-        const ultimoDia = new Date(ano, mes, 0).getDate();
-        const dia = Math.min(Math.max(fixa.dia,1), ultimoDia);
-        ocorrencia.quando = new Date(ano, mes-1, dia, 12,0,0).toISOString();
+        ocorrencia.formaPagamento = fixa.formaPagamento;
+        ocorrencia.dataCompra = dataFixaCompraParaPagamento(fixa, dados.chave);
+        ocorrencia.dataPagamento = dataFixaPagamentoNoMes(fixa, dados.chave);
+        ocorrencia.quando = ocorrencia.dataPagamento;
         salvar(K_DESPESAS, state.despesas);
       }
     }
@@ -1064,7 +1108,7 @@
   function mesesComMovimentacaoFinanceira() {
     const set = new Set();
     state.clientes.forEach(c => { todosPagamentosCliente(c).forEach(p => { const dt = new Date(p.data); if (!Number.isNaN(dt.getTime())) set.add(chaveMesFinanceiro(dt.getFullYear(), dt.getMonth())); }); });
-    state.despesas.forEach(d => { const dt = new Date(d.quando); if (!Number.isNaN(dt.getTime())) set.add(chaveMesFinanceiro(dt.getFullYear(), dt.getMonth())); });
+    state.despesas.forEach(d => { const dt = new Date(dataPagamentoDaDespesa(d)); if (!Number.isNaN(dt.getTime())) set.add(chaveMesFinanceiro(dt.getFullYear(), dt.getMonth())); });
     state.financeiro.meses.forEach(m => { if (m.aportes && m.aportes.length) set.add(m.chave); });
     return [...set].sort((a,b) => b.localeCompare(a));
   }
@@ -1170,13 +1214,13 @@
       corpo = '<div style="display:flex;flex-direction:column;gap:4px;">' + (recebimentos.length ? recebimentos.map(r => '<div class="financeiro-item"><span class="financeiro-item-dot" style="background:var(--verde)"></span><div class="financeiro-item-info"><div class="financeiro-item-nome">' + esc(r.cliente.nome) + '</div><div class="financeiro-item-sub">Recebido em ' + new Date(r.pagamento.data).toLocaleDateString('pt-BR') + '</div></div><strong class="num financeiro-item-value" style="color:var(--verde)">+ ' + brl(r.pagamento.valor) + '</strong></div>').join('') : '<div class="financeiro-empty">Nenhum recebimento neste mês.</div>') + '</div>';
     } else if (tipo === "despesas") {
       titulo = "Despesas · " + nomeMesChave(chave);
-      corpo = '<div style="display:flex;flex-direction:column;gap:4px;">' + (despesas.length ? despesas.map(d => '<div class="financeiro-item acao-editar-despesa" data-id="' + esc(d.id) + '" data-fixa-id="' + esc(d.fixaId || '') + '" data-virtual="' + (d.virtual ? '1' : '0') + '"><span class="financeiro-item-dot" style="background:var(--vermelho)"></span><div class="financeiro-item-info"><div class="financeiro-item-nome">' + esc(d.nome) + '</div><div class="financeiro-item-sub">' + esc(d.categoria || "Outros") + (d.virtual ? ' · fixa · prevista' : d.fixa ? ' · fixa' : '') + ' · ' + new Date(d.quando).toLocaleDateString('pt-BR') + '</div></div><strong class="num financeiro-item-value" style="color:var(--vermelho)">− ' + brl(d.valor) + '</strong></div>').join('') : '<div class="financeiro-empty">Nenhuma despesa neste mês.</div>') + '<div style="border-top:1px solid var(--borda);margin-top:8px;padding-top:10px;display:flex;justify-content:space-between;font-size:10px;"><span>Total</span><b class="num" style="color:var(--vermelho)">' + brl(t.despesas) + '</b></div></div>';
+      corpo = '<div style="display:flex;flex-direction:column;gap:4px;">' + (despesas.length ? despesas.map(d => '<div class="financeiro-item acao-editar-despesa" data-id="' + esc(d.id) + '" data-fixa-id="' + esc(d.fixaId || '') + '" data-virtual="' + (d.virtual ? '1' : '0') + '"><span class="financeiro-item-dot" style="background:var(--vermelho)"></span><div class="financeiro-item-info"><div class="financeiro-item-nome">' + esc(d.nome) + '</div><div class="financeiro-item-sub">' + esc(d.categoria || "Outros") + (d.virtual ? ' · fixa · prevista' : d.fixa ? ' · fixa' : '') + (d.formaPagamento === 'cartao' ? ' · cartão · compra ' + new Date(dataCompraDaDespesa(d)).toLocaleDateString('pt-BR') + ' · paga ' + new Date(dataPagamentoDaDespesa(d)).toLocaleDateString('pt-BR') : ' · paga ' + new Date(dataPagamentoDaDespesa(d)).toLocaleDateString('pt-BR')) + '</div></div><strong class="num financeiro-item-value" style="color:var(--vermelho)">− ' + brl(d.valor) + '</strong></div>').join('') : '<div class="financeiro-empty">Nenhuma despesa neste mês.</div>') + '<div style="border-top:1px solid var(--borda);margin-top:8px;padding-top:10px;display:flex;justify-content:space-between;font-size:10px;"><span>Total</span><b class="num" style="color:var(--vermelho)">' + brl(t.despesas) + '</b></div></div>';
     } else if (tipo === "liquido") {
       titulo = "Resumo · " + nomeMesChave(chave);
       corpo = '<div style="display:flex;flex-direction:column;gap:8px;"><div class="financeiro-item"><span>Recebido</span><b class="num" style="color:var(--verde)">' + brl(t.recebido) + '</b></div><div class="financeiro-item"><span>Despesas</span><b class="num" style="color:var(--vermelho)">− ' + brl(t.despesas) + '</b></div><div class="financeiro-item" style="background:var(--inputBg)"><span><b>Valor líquido</b></span><b class="num">' + brl(t.liquido) + '</b></div></div>';
     } else {
       titulo = "Movimentações · " + nomeMesChave(chave);
-      const mov = [...recebimentos.map(r=>({nome:r.cliente.nome,detalhe:'Recebimento',valor:r.pagamento.valor,data:r.pagamento.data,cor:'var(--verde)'})), ...despesas.map(d=>({nome:d.nome,detalhe:d.categoria||'Despesa',valor:d.valor,data:d.quando,cor:'var(--vermelho)'})), ...aportes.map(a=>({nome:a.nome,detalhe:'Aporte',valor:a.valor,data:a.data,cor:'var(--azul)'}))].sort((a,b)=>new Date(b.data||0)-new Date(a.data||0));
+      const mov = [...recebimentos.map(r=>({nome:r.cliente.nome,detalhe:'Recebimento',valor:r.pagamento.valor,data:r.pagamento.data,cor:'var(--verde)'})), ...despesas.map(d=>({nome:d.nome,detalhe:d.categoria||'Despesa',valor:d.valor,data:dataPagamentoDaDespesa(d),cor:'var(--vermelho)'})), ...aportes.map(a=>({nome:a.nome,detalhe:'Aporte',valor:a.valor,data:a.data,cor:'var(--azul)'}))].sort((a,b)=>new Date(b.data||0)-new Date(a.data||0));
       corpo = '<div style="display:flex;flex-direction:column;gap:3px;">' + (mov.length ? mov.map(x=>'<div class="financeiro-item"><span class="financeiro-item-dot" style="background:' + x.cor + '"></span><div class="financeiro-item-info"><div class="financeiro-item-nome">' + esc(x.nome) + '</div><div class="financeiro-item-sub">' + esc(x.detalhe) + ' · ' + new Date(x.data).toLocaleDateString('pt-BR') + '</div></div><strong class="num financeiro-item-value" style="color:' + x.cor + '">' + (x.cor==='var(--verde)'?'+ ':'− ') + brl(x.valor) + '</strong></div>').join('') : '<div class="financeiro-empty">Nenhuma movimentação neste mês.</div>') + '</div>';
     }
     abrirModal(titulo, corpo, () => {
@@ -1198,7 +1242,7 @@
     const despesasMes = despesasDoMesFinanceiro(chave);
     const movimentos = [
       ...state.clientes.flatMap(c => pagamentosDoMesCliente(c, chave).map(p => ({tipo:"recebido",nome:c.nome,detalhe:"Pagamento recebido",valor:p.valor,data:p.data,cor:"var(--verde)",pacoteId:p.pacoteId}))),
-      ...despesasMes.map(d => ({tipo:"despesa",nome:d.nome,detalhe:d.categoria || "Despesa",valor:d.valor,data:d.quando,cor:"var(--vermelho)",id:d.id,fixaId:d.fixaId,fixa:d.fixa,virtual:d.virtual})),
+      ...despesasMes.map(d => ({tipo:"despesa",nome:d.nome,detalhe:d.categoria || "Despesa",valor:d.valor,data:dataPagamentoDaDespesa(d),cor:"var(--vermelho)",id:d.id,fixaId:d.fixaId,fixa:d.fixa,virtual:d.virtual})),
       ...aportesDoMes(chave).map(a => ({tipo:"aporte",nome:a.nome,detalhe:"Reserva / investimento",valor:a.valor,data:a.data,cor:"var(--azul)",id:a.id}))
     ].sort((a,b) => new Date(b.data || 0) - new Date(a.data || 0));
     const ultimos = movimentos.slice(0,5);
@@ -1241,7 +1285,7 @@
 
     h+='<div class="financeiro-panel"><div class="financeiro-panel-head"><div><div class="financeiro-panel-title">Despesas do mês</div><span class="financeiro-panel-sub">Total '+brl(t.despesas)+'</span></div><button class="financeiro-add" id="btn-nova-despesa" aria-label="Adicionar despesa">＋</button></div><div class="financeiro-lista">';
     if(!despesasMes.length) h+='<div class="financeiro-empty">Nenhuma despesa registrada.<br><button class="financeiro-small-btn" id="fin-empty-despesa">Adicionar despesa</button></div>';
-    despesasMes.slice(0,6).forEach(d=>{h+='<div class="financeiro-item acao-editar-despesa" data-id="'+esc(d.id)+'"><span class="financeiro-item-dot" style="background:var(--vermelho)"></span><div class="financeiro-item-info"><div class="financeiro-item-nome">'+esc(d.nome)+'</div><div class="financeiro-item-sub">'+esc(d.categoria||'Outros')+' · '+new Date(d.quando).toLocaleDateString('pt-BR')+'</div></div><strong class="num financeiro-item-value" style="color:var(--vermelho)">− '+brl(d.valor)+'</strong></div>';});
+    despesasMes.slice(0,6).forEach(d=>{h+='<div class="financeiro-item acao-editar-despesa" data-id="'+esc(d.id)+'"><span class="financeiro-item-dot" style="background:var(--vermelho)"></span><div class="financeiro-item-info"><div class="financeiro-item-nome">'+esc(d.nome)+'</div><div class="financeiro-item-sub">'+esc(d.categoria||'Outros')+(d.formaPagamento === 'cartao' ? ' · cartão · compra ' + new Date(dataCompraDaDespesa(d)).toLocaleDateString('pt-BR') + ' · paga ' + new Date(dataPagamentoDaDespesa(d)).toLocaleDateString('pt-BR') : ' · paga ' + new Date(dataPagamentoDaDespesa(d)).toLocaleDateString('pt-BR'))+'</div></div><strong class="num financeiro-item-value" style="color:var(--vermelho)">− '+brl(d.valor)+'</strong></div>';});
     if(despesasMes.length>6) h+='<div class="financeiro-empty" style="padding:7px">+'+(despesasMes.length-6)+' outras · <button class="financeiro-small-btn" id="fin-ver-despesas">ver tudo</button></div>';
     h+='</div></div></div>';
 
@@ -1815,7 +1859,16 @@
       state.producaoSemanaOffset = semana;
       render();
     });
-    on("#producao-semana-hoje", "click", () => { state.producaoSemanaOffset = 0; state.producaoJanelaOffset = 0; render(); });
+    on("#producao-semana-hoje", "click", () => {
+      const hoje = new Date();
+      const diaSemana = hoje.getDay();
+      const indiceHoje = diaSemana === 0 ? 6 : diaSemana - 1;
+      state.producaoSemanaOffset = 0;
+      state.producaoJanelaOffset = Math.max(0, Math.min(4, indiceHoje - 1));
+      state.calMes = hoje.getMonth();
+      state.calAno = hoje.getFullYear();
+      render();
+    });
     on(".acao-semana-check", "click", (e) => { e.stopPropagation(); alternarTarefa(e.currentTarget.dataset.id); });
     on(".acao-semana-tarefa", "click", (e) => { if (e.target.closest(".acao-semana-check")) return; abrirModalEditarTarefa(e.currentTarget.dataset.id); });
 
@@ -1938,50 +1991,65 @@
       const fixaId = partes.slice(0, -2).join('-');
       return { fixa: despesaFixaDoId(fixaId), chave, fixaId };
     })() : null;
-    const item = itemReal || (virtualFixa?.fixa ? { ...virtualFixa.fixa, fixaId: virtualFixa.fixaId, virtual: true } : null);
-    const chave = chaveMes || (itemReal?.quando ? chaveMesFinanceiro(new Date(itemReal.quando).getFullYear(), new Date(itemReal.quando).getMonth()) : (virtualFixa?.chave || mesAtualFinanceiro()));
-    const dataPadrao = itemReal?.quando ? new Date(itemReal.quando).toISOString().slice(0,10) : (item?.dia ? chave + '-' + String(Math.min(Number(item.dia), new Date(Number(chave.slice(0,4)), Number(chave.slice(5,7)), 0).getDate())).padStart(2,'0') : (chave === mesAtualFinanceiro() ? new Date().toISOString().slice(0,10) : chave + '-01'));
+    const item = itemReal || (virtualFixa?.fixa ? { ...virtualFixa.fixa, fixaId: virtualFixa.fixaId, virtual: true, dataCompra: dataFixaCompraParaPagamento(virtualFixa.fixa, virtualFixa.chave), dataPagamento: dataFixaPagamentoNoMes(virtualFixa.fixa, virtualFixa.chave) } : null);
+    const chave = chaveMes || (itemReal?.dataPagamento ? chaveMesFinanceiro(new Date(itemReal.dataPagamento).getFullYear(), new Date(itemReal.dataPagamento).getMonth()) : (itemReal?.quando ? chaveMesFinanceiro(new Date(itemReal.quando).getFullYear(), new Date(itemReal.quando).getMonth()) : (virtualFixa?.chave || mesAtualFinanceiro())));
+    const dataCompraPadrao = item?.dataCompra ? new Date(item.dataCompra).toISOString().slice(0,10) : (item?.quando ? new Date(item.quando).toISOString().slice(0,10) : (chave === mesAtualFinanceiro() ? new Date().toISOString().slice(0,10) : chave + '-01'));
+    const dataPagamentoPadrao = item?.dataPagamento ? new Date(item.dataPagamento).toISOString().slice(0,10) : (item?.quando ? new Date(item.quando).toISOString().slice(0,10) : dataCompraPadrao);
     const fixaMarcada = !!item?.fixaId || !!item?.id && !!despesaFixaDoId(item.id);
+
     abrirModal(item ? 'Editar despesa' : 'Nova despesa',
       '<div style="display:flex;flex-direction:column;gap:9px;">' +
-      '<input class="input-field" id="nd-nome" value="' + esc(item?.nome || '') + '" placeholder="nome da despesa (ex: internet, Adobe)">' +
+      '<input class="input-field" id="nd-nome" value="' + esc(item?.nome || '') + '" placeholder="nome da despesa (ex: Adobe, internet)">' +
       '<div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;">' +
       '<input class="input-field" id="nd-valor" type="number" step="0.01" value="' + (item?.valor ?? '') + '" placeholder="valor">' +
-      '<input class="input-field" id="nd-categoria" value="' + esc(item?.categoria || '') + '" placeholder="tipo (ex: software, fixo)"></div>' +
-      '<input class="input-field" id="nd-data" type="date" value="' + esc(dataPadrao) + '">' +
-      ((!item || (itemReal && !fixaMarcada)) ? '<label style="display:flex;align-items:center;gap:8px;font-size:9px;color:var(--cinza);cursor:pointer;"><input id="nd-fixa" type="checkbox" style="accent-color:var(--verde);"' + ((!item && false) || fixaMarcada ? ' checked' : '') + '> despesa fixa · repetir automaticamente todos os meses</label>' : (fixaMarcada ? '<div style="font-size:8.5px;color:var(--cinzaClaro);background:var(--inputBg);padding:9px 10px;border-radius:9px;">Despesa fixa. Alterar aqui atualiza os próximos meses; os lançamentos passados permanecem como estavam.</div>' : '')) +
+      '<input class="input-field" id="nd-categoria" value="' + esc(item?.categoria || '') + '" placeholder="tipo (ex: software)"></div>' +
+      '<select class="input-field" id="nd-forma">' +
+      '<option value="conta"' + ((item?.formaPagamento || 'conta') === 'conta' ? ' selected' : '') + '>conta / pix / débito</option>' +
+      '<option value="cartao"' + ((item?.formaPagamento || '') === 'cartao' ? ' selected' : '') + '>cartão</option>' +
+      '</select>' +
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;">' +
+      '<div><label style="display:block;font-size:8px;color:var(--cinzaClaro);margin:0 0 4px 2px;">data da compra</label><input class="input-field" id="nd-compra" type="date" value="' + esc(dataCompraPadrao) + '"></div>' +
+      '<div><label style="display:block;font-size:8px;color:var(--cinzaClaro);margin:0 0 4px 2px;">data do pagamento</label><input class="input-field" id="nd-pagamento" type="date" value="' + esc(dataPagamentoPadrao) + '"></div>' +
+      '</div>' +
+      ((!item || (itemReal && !fixaMarcada)) ? '<label style="display:flex;align-items:center;gap:8px;font-size:9px;color:var(--cinza);cursor:pointer;"><input id="nd-fixa" type="checkbox" style="accent-color:var(--verde);"' + ((!item && false) || fixaMarcada ? ' checked' : '') + '> despesa fixa · repetir automaticamente todos os meses</label>' : (fixaMarcada ? '<div style="font-size:8.5px;color:var(--cinzaClaro);background:var(--inputBg);padding:9px 10px;border-radius:9px;">Despesa fixa. As datas de compra e pagamento definem o ciclo; os próximos meses acompanham essa configuração.</div>' : '')) +
       '<button class="btn btn-dark" id="nd-salvar" style="margin-top:4px;">' + (item ? 'salvar alterações' : 'adicionar despesa') + '</button>' +
       (itemReal ? '<button class="btn" id="nd-remover" style="color:var(--vermelho);">remover lançamento</button>' : '') +
       (fixaMarcada && item?.fixaId ? '<button class="btn" id="nd-desativar-fixa" style="color:var(--vermelho);">desativar recorrência</button>' : '') +
       '</div>',
       () => {
+        document.getElementById('nd-forma').addEventListener('change', () => {
+          const forma = document.getElementById('nd-forma').value;
+          const pagamento = document.getElementById('nd-pagamento');
+          pagamento.title = forma === 'cartao' ? 'Mês em que a fatura será paga' : 'Data em que o dinheiro sairá';
+        });
         document.getElementById('nd-salvar').addEventListener('click', () => {
           const nome = document.getElementById('nd-nome').value;
           const valor = Number(document.getElementById('nd-valor').value);
           const categoria = document.getElementById('nd-categoria').value;
-          const quando = document.getElementById('nd-data').value;
-          if (!nome.trim() || !valor || !quando) return;
+          const formaPagamento = document.getElementById('nd-forma').value;
+          const dataCompra = document.getElementById('nd-compra').value;
+          const dataPagamento = document.getElementById('nd-pagamento').value;
+          if (!nome.trim() || !valor || !dataCompra || !dataPagamento) return toast('Preencha nome, valor e as duas datas', 'var(--vermelho)');
+          if (new Date(dataPagamento + 'T12:00:00') < new Date(dataCompra + 'T12:00:00')) return toast('A data do pagamento não pode ser anterior à compra', 'var(--vermelho)');
           if (item?.fixaId) {
-            const dia = Number(quando.slice(-2)) || item.dia || 1;
-            editarDespesaFixa(item.fixaId, { nome, valor, categoria, dia, chave });
+            editarDespesaFixa(item.fixaId, { nome, valor, categoria, formaPagamento, diaCompra: Number(dataCompra.slice(-2)) || 1, diaPagamento: Number(dataPagamento.slice(-2)) || 1, chave });
           } else if (itemReal) {
             const tornarFixa = document.getElementById('nd-fixa')?.checked;
             if (tornarFixa) {
-              // Converte um lançamento existente em despesa fixa, preservando o registro atual.
-              const fixa = { id: 'fixa-' + uid(), nome: nome.trim(), valor: valor, categoria: categoria.trim() || 'Fixa', dia: Number(quando.slice(-2)) || 1, inicio: chaveMesDaDataISO(new Date(quando + 'T12:00:00').toISOString()), ativo: true };
+              const fixa = { id: 'fixa-' + uid(), nome: nome.trim(), valor, categoria: categoria.trim() || 'Fixa', diaCompra: Number(dataCompra.slice(-2)) || 1, diaPagamento: Number(dataPagamento.slice(-2)) || 1, dia: Number(dataPagamento.slice(-2)) || 1, formaPagamento, inicio: chaveMesDaDataISO(new Date(dataPagamento + 'T12:00:00').toISOString()), ativo: true };
               state.financeiro.despesasFixas.push(fixa);
               itemReal.fixaId = fixa.id;
               itemReal.fixa = true;
-              itemReal.nome = fixa.nome; itemReal.valor = fixa.valor; itemReal.categoria = fixa.categoria; itemReal.quando = new Date(quando + 'T12:00:00').toISOString();
+              itemReal.nome = fixa.nome; itemReal.valor = fixa.valor; itemReal.categoria = fixa.categoria; itemReal.formaPagamento = fixa.formaPagamento; itemReal.dataCompra = new Date(dataCompra + 'T12:00:00').toISOString(); itemReal.dataPagamento = new Date(dataPagamento + 'T12:00:00').toISOString(); itemReal.quando = itemReal.dataPagamento;
               salvarFinanceiro(); salvar(K_DESPESAS, state.despesas);
               toast('Despesa convertida em fixa · será repetida nos próximos meses', 'var(--vermelho)');
               render();
             } else {
-              editarDespesa(itemReal.id, { nome, valor, categoria, quando });
+              editarDespesa(itemReal.id, { nome, valor, categoria, formaPagamento, dataCompra, dataPagamento });
             }
           } else {
             const fixa = document.getElementById('nd-fixa')?.checked;
-            adicionarDespesa({ nome, valor, categoria, quando, fixa });
+            adicionarDespesa({ nome, valor, categoria, formaPagamento, dataCompra, dataPagamento, fixa });
           }
           fecharModal();
         });
