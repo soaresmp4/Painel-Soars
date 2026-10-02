@@ -14,7 +14,7 @@
     --verde:#32D74B; --laranja:#FF9F0A; --vermelho:#FF453A; --azul:#0A84FF; --amarelo:#FFD60A;
     --sombraCard: 0 1px 0 rgba(255,255,255,0.05) inset, 0 12px 32px -16px rgba(0,0,0,0.7);
     --sombraFlutuante: 0 20px 50px -12px rgba(0,0,0,0.7);
-    --divisor: rgba(255,255,255,0.08);
+    --divisor: rgba(255,255,255,0.08); --borda:rgba(255,255,255,0.08);
   }
   [data-theme="claro"] {
     --bg:#F2F2F5; --card:#FFFFFF; --cardHover:#FBFBFD;
@@ -23,7 +23,7 @@
     --verde:#30B350; --laranja:#E6890C; --vermelho:#E0362C; --azul:#0071E3; --amarelo:#D9A400;
     --sombraCard: 0 1px 0 rgba(255,255,255,0.6) inset, 0 12px 32px -18px rgba(0,0,0,0.16);
     --sombraFlutuante: 0 24px 60px -14px rgba(0,0,0,0.22);
-    --divisor: rgba(0,0,0,0.07);
+    --divisor: rgba(0,0,0,0.07); --borda:rgba(0,0,0,0.07);
   }
   * { box-sizing: border-box; }
   html, body { margin:0; padding:0; }
@@ -75,14 +75,10 @@
   .section-title { margin:0; font-size:12.5px; }
   .section-sub { font-size:9px; color:var(--cinzaClaro); letter-spacing:.04em; }
 
-  .meta-card { margin-bottom:12px; }
   .meta-bar-bg { height:7px; background:var(--inputBg); border-radius:10px; overflow:hidden; }
   .meta-bar-fill { height:100%; border-radius:10px; transition:width .5s cubic-bezier(.16,1,.3,1); background:var(--destaque); }
   .meta-bar-fill.completo { background:var(--verde); }
 
-  .custos-card { margin-bottom:12px; }
-  .custos-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:9px; }
-  .despesa-row { display:flex; justify-content:space-between; align-items:center; font-size:11px; padding:8px 11px; background:var(--inputBg); border-radius:10px; }
 
   .tarefas-notas-grid { display:grid; grid-template-columns:1fr 1fr; gap:11px; margin-bottom:12px; align-items:stretch; }
   .tarefa-row { display:flex; align-items:center; gap:10px; padding:9px 11px; background:var(--inputBg); border-radius:10px; margin-bottom:6px; }
@@ -152,16 +148,131 @@
 
   .conclusao-row { display:flex; justify-content:space-between; align-items:center; font-size:11px; padding:10px 13px; background: color-mix(in srgb, var(--verde) 12%, transparent); border-radius:11px; margin-bottom:6px; }
 
-  @media (max-width: 900px) {
-    .kpi-grid { grid-template-columns:1fr 1fr; }
-    .middle-grid { grid-template-columns:1fr; }
-    .tarefas-notas-grid { grid-template-columns:1fr; }
-  }
-  @media (max-width: 560px) {
-    #app { padding: 18px; }
-    .kpi-grid { grid-template-columns:1fr; }
-    .custos-grid { grid-template-columns:1fr; }
-  }
+
+  /* ---------- Financeiro — padrão do painel ---------- */
+  .financeiro-card{margin-bottom:12px;overflow:hidden}
+  .financeiro-top{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:14px}
+  .financeiro-title{font-size:16px;margin:0;letter-spacing:-.035em}
+  .financeiro-caption{display:block;margin-top:5px;font-size:9px;color:var(--cinzaClaro)}
+  .financeiro-month-nav{display:flex;align-items:center;gap:4px;flex-shrink:0}
+  .financeiro-month-name{min-width:106px;text-align:center;font-size:9px;font-weight:700;text-transform:capitalize}
+  .financeiro-nav-btn{width:28px;height:28px;border:0;background:var(--inputBg);color:var(--texto);border-radius:9px;cursor:pointer;font-size:13px;transition:transform .18s ease,background .18s ease}
+  .financeiro-nav-btn:hover{background:var(--cardHover);transform:translateY(-1px)}
+  .financeiro-nav-today{border:0;background:transparent;color:var(--cinza);font-size:8px;cursor:pointer;padding:5px 4px;transition:color .18s ease}
+  .financeiro-nav-today:hover{color:var(--texto)}
+
+  .financeiro-actions{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px}
+  .financeiro-action{height:40px;border:0;background:var(--inputBg);color:var(--texto);border-radius:11px;padding:0 12px;display:flex;align-items:center;justify-content:center;gap:7px;cursor:pointer;font-size:9px;font-weight:650;transition:transform .18s ease,background .18s ease,box-shadow .18s ease}
+  .financeiro-action:hover{background:var(--cardHover);transform:translateY(-2px);box-shadow:0 10px 22px -18px rgba(0,0,0,.8)}
+  .financeiro-action strong{font-size:15px;line-height:1;font-weight:450}
+  .financeiro-action.primary{background:var(--destaque);color:var(--destaqueTexto);box-shadow:0 10px 24px -18px rgba(255,255,255,.55)}
+  .financeiro-action.primary:hover{filter:none;background:var(--destaque);transform:translateY(-2px);box-shadow:0 14px 26px -17px rgba(255,255,255,.7)}
+
+  .financeiro-hero{padding:19px 20px 16px;background:var(--destaque);color:var(--destaqueTexto);border-radius:18px;margin-bottom:10px;box-shadow:var(--sombraCard);transition:transform .2s ease,box-shadow .2s ease}
+  .financeiro-hero:hover{transform:translateY(-1px);box-shadow:var(--sombraFlutuante)}
+  .financeiro-hero-top{display:flex;align-items:flex-start;justify-content:space-between;gap:20px}
+  .financeiro-hero-label{font-size:8px;text-transform:uppercase;letter-spacing:.09em;opacity:.52}
+  .financeiro-hero-value{display:block;font-size:31px;line-height:1;letter-spacing:-.065em;margin-top:7px}
+  .financeiro-hero-note{font-size:8px;opacity:.48;margin-top:8px}
+  .financeiro-hero-formula{display:flex;gap:5px;flex-wrap:wrap;margin-top:13px}
+  .financeiro-formula-chip{font-size:7.5px;color:inherit;background:color-mix(in srgb,var(--destaqueTexto) 7%,transparent);border:0;border-radius:7px;padding:5px 7px;opacity:.82}
+  .financeiro-mini-meta{text-align:right;min-width:132px;padding-top:2px}
+  .financeiro-mini-meta-label{font-size:7.5px;opacity:.5}
+.financeiro-mini-meta-note{display:block;margin-top:5px;font-size:6.8px;color:var(--cinzaClaro);}
+  .financeiro-mini-meta-value{display:block;font-size:10.5px;margin-top:5px}
+  .financeiro-mini-bar{height:4px;width:132px;background:color-mix(in srgb,var(--destaqueTexto) 13%,transparent);border-radius:99px;overflow:hidden;margin-top:8px;margin-left:auto}
+  .financeiro-mini-fill{height:100%;background:var(--destaqueTexto);border-radius:99px;opacity:.78}
+  .financeiro-mini-edit{margin-top:5px;border:0;background:transparent;color:inherit;opacity:.48;font-size:7.5px;cursor:pointer;padding:0}
+  .financeiro-mini-edit:hover{opacity:1}
+
+  .financeiro-summary{display:grid;grid-template-columns:repeat(3,1fr);gap:0;background:var(--card);border-radius:14px;padding:4px;margin-bottom:10px;box-shadow:var(--sombraCard)}
+  .financeiro-summary-item{padding:11px 14px;border-radius:10px;cursor:pointer;transition:background .18s ease,transform .18s ease}
+  .financeiro-summary-item:hover{background:var(--inputBg);transform:translateY(-1px)}
+  .financeiro-summary-item:first-child{padding-left:13px}
+  .financeiro-summary-label{display:block;font-size:7.5px;color:var(--cinzaClaro);text-transform:uppercase;letter-spacing:.06em}
+  .financeiro-summary-value{display:block;font-size:13px;margin-top:5px}
+  .financeiro-summary-note{display:block;font-size:7px;color:var(--cinzaClaro);margin-top:3px}
+
+  .financeiro-grid{display:grid;grid-template-columns:1.18fr .82fr;gap:10px;margin-bottom:10px}
+  .financeiro-column{display:flex;flex-direction:column;gap:10px;min-width:0}
+  .financeiro-panel{border:0;border-radius:16px;padding:16px;min-width:0;background:var(--card);box-shadow:var(--sombraCard);transition:transform .2s ease,box-shadow .2s ease}
+  .financeiro-panel:hover{transform:translateY(-1px);box-shadow:var(--sombraFlutuante)}
+  .financeiro-panel-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:10px}
+  .financeiro-panel-title{font-size:10.5px;font-weight:700;letter-spacing:-.01em}
+  .financeiro-panel-sub{display:block;font-size:7.5px;color:var(--cinzaClaro);margin-top:3px}
+  .financeiro-view-all,.financeiro-small-btn,.financeiro-add{border:0;background:transparent;color:var(--cinza);font-size:8px;cursor:pointer;padding:3px 0;transition:color .18s ease,transform .18s ease}
+  .financeiro-view-all:hover,.financeiro-small-btn:hover{color:var(--texto);transform:translateX(1px)}
+  .financeiro-add{font-size:16px;padding:0 3px;color:var(--texto)}
+  .financeiro-lista{display:flex;flex-direction:column;gap:2px}
+  .financeiro-item{display:flex;align-items:center;gap:9px;padding:9px 7px;border-radius:10px;cursor:pointer;transition:background .16s ease,transform .16s ease}
+  .financeiro-item:hover{background:var(--inputBg);transform:translateX(2px)}
+  .financeiro-item-dot{width:6px;height:6px;border-radius:50%;flex:0 0 6px}
+  .financeiro-item-info{flex:1;min-width:0}
+  .financeiro-item-nome{font-size:9.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .financeiro-item-sub{font-size:7.5px;color:var(--cinzaClaro);margin-top:3px}
+  .financeiro-item-value{font-size:9.5px;white-space:nowrap}
+  .financeiro-empty{padding:18px 6px;color:var(--cinzaClaro);font-size:8.5px;text-align:center}
+
+  .financeiro-composicao{margin-top:14px;padding-top:13px;border-top:1px solid var(--divisor)}
+  .financeiro-composicao-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px}
+  .financeiro-composicao-title{font-size:8px;color:var(--cinzaClaro)}
+  .financeiro-composicao-total{font-size:8px;color:var(--cinzaClaro)}
+  .financeiro-composicao-bar{height:8px;background:var(--inputBg);border-radius:99px;overflow:hidden;display:flex}
+  .financeiro-composicao-seg{height:100%;min-width:0;transition:width .35s ease}
+  .financeiro-composicao-seg.despesa{background:var(--vermelho)}
+  .financeiro-composicao-seg.aporte{background:var(--azul)}
+  .financeiro-composicao-seg.disponivel{background:var(--verde)}
+  .financeiro-composicao-legend{display:flex;gap:12px;flex-wrap:wrap;margin-top:8px}
+  .financeiro-comp-leg{display:flex;align-items:center;gap:5px;font-size:7px;color:var(--cinzaClaro)}
+  .financeiro-comp-dot{width:5px;height:5px;border-radius:50%}
+
+  .financeiro-reserva{display:flex;align-items:center;gap:17px}
+  .financeiro-reserva-ring{width:94px;height:94px;flex:0 0 94px;position:relative;display:grid;place-items:center}
+  .financeiro-reserva-ring svg{width:94px;height:94px;transform:rotate(-90deg)}
+  .financeiro-reserva-ring-track{fill:none;stroke:var(--inputBg);stroke-width:8}
+  .financeiro-reserva-ring-fill{fill:none;stroke:var(--verde);stroke-width:8;stroke-linecap:round;transition:stroke-dashoffset .45s ease}
+  .financeiro-reserva-ring-center{position:absolute;text-align:center}
+  .financeiro-reserva-ring-pct{font-size:15px;font-weight:700;letter-spacing:-.03em}
+  .financeiro-reserva-ring-label{display:block;font-size:6.5px;color:var(--cinzaClaro);margin-top:1px}
+  .financeiro-reserva-info{flex:1;min-width:0}
+  .financeiro-reserva-label{font-size:7.5px;color:var(--cinzaClaro);display:block;margin-bottom:4px}
+  .financeiro-reserva-value{font-size:21px;letter-spacing:-.045em;display:block}
+  .financeiro-reserva-meta{display:flex;justify-content:space-between;gap:10px;margin-top:5px;font-size:7.5px;color:var(--cinzaClaro)}
+  .financeiro-reserva-actions{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:12px}
+  .financeiro-reserva-edit{border:0;background:transparent;color:var(--cinza);font-size:7.5px;cursor:pointer;padding:0}
+  .financeiro-reserva-edit:hover{color:var(--texto)}
+
+  .financeiro-meta-receita{display:flex;align-items:center;gap:14px}
+  .financeiro-meta-receita-icon{width:38px;height:38px;border-radius:12px;background:var(--inputBg);display:grid;place-items:center;font-size:15px;flex:0 0 38px}
+  .financeiro-meta-receita-info{flex:1;min-width:0}
+  .financeiro-meta-receita-label{display:block;font-size:7.5px;color:var(--cinzaClaro)}
+  .financeiro-meta-receita-value{display:block;font-size:15px;margin-top:4px}
+  .financeiro-meta-receita-bar{height:5px;background:var(--inputBg);border-radius:99px;overflow:hidden;margin-top:8px}
+  .financeiro-meta-receita-fill{height:100%;border-radius:99px;background:var(--destaque);transition:width .35s ease}
+  .financeiro-meta-receita-foot{display:flex;justify-content:space-between;gap:8px;margin-top:6px;font-size:7px;color:var(--cinzaClaro)}
+  .financeiro-meta-receita-edit{border:0;background:transparent;color:var(--cinza);font-size:7.5px;cursor:pointer;padding:0 0 0 4px}
+  .financeiro-meta-receita-edit:hover{color:var(--texto)}
+
+  .financeiro-history{margin-top:0;border-radius:16px;padding:16px;background:var(--card);box-shadow:var(--sombraCard)}
+  .financeiro-history-head{display:flex;align-items:flex-end;justify-content:space-between;gap:10px;margin-bottom:10px}
+  .financeiro-history-title{font-size:10.5px;font-weight:700}
+  .financeiro-history-sub{font-size:7.5px;color:var(--cinzaClaro);margin-top:3px}
+  .financeiro-history-header,.financeiro-history-row{display:grid;grid-template-columns:1.2fr repeat(4,minmax(60px,1fr));gap:10px;align-items:center}
+  .financeiro-history-header{padding:0 8px 7px;color:var(--cinzaClaro);font-size:7px;text-transform:uppercase;letter-spacing:.05em}
+  .financeiro-history-row{padding:8px;border-radius:9px;cursor:pointer;transition:background .16s ease,transform .16s ease}
+  .financeiro-history-row:hover{background:var(--inputBg);transform:translateX(2px)}
+  .financeiro-history-month{font-size:8.5px;font-weight:650}
+  .financeiro-history-value{font-size:8px;color:var(--cinza)}
+  .financeiro-history-value.positive{color:var(--verde)}
+  .financeiro-history-value.negative{color:var(--vermelho)}
+  .financeiro-history-value.invest{color:var(--azul)}
+  .financeiro-history-check{font-size:7px;color:var(--verde);margin-left:4px}
+
+  @media(max-width:900px){.financeiro-grid{grid-template-columns:1fr}.financeiro-column:last-child{display:grid;grid-template-columns:1fr 1fr;align-items:start}}
+  @media(max-width:700px){.financeiro-actions{grid-template-columns:1fr}.financeiro-hero-top{flex-direction:column}.financeiro-mini-meta{text-align:left}.financeiro-mini-bar{margin-left:0}.financeiro-summary{grid-template-columns:1fr}.financeiro-summary-item{padding:9px 11px!important}.financeiro-column:last-child{display:flex}.financeiro-reserva{align-items:flex-start}}
+  @media(max-width:560px){.financeiro-history{overflow:auto}.financeiro-history-header,.financeiro-history-row{min-width:520px}}
+
+
 </style>
 </head>
 <body data-theme="escuro">
@@ -182,12 +293,13 @@
   const K_TEMA = "soars-tema-v1";
   const K_TAREFAS = "soars-tarefas-v1";
   const K_ANOTACOES = "soars-anotacoes-v1";
+  const K_FINANCEIRO = "soars-financeiro-v1";
 
   const PALETA_CORES_CLIENTE = ["#BF5AF2", "#FF375F", "#FFD60A"];
 
   const SEED_CLIENTES = [
-    { id: "caio", nome: "Caio", totalVideos: 30, entregues: 19, valorTotal: 1500, diaPagamento: 10, pago: false, notas: "", cor: PALETA_CORES_CLIENTE[0] },
-    { id: "joao", nome: "João", totalVideos: 30, entregues: 0, valorTotal: 1950, diaPagamento: 15, pago: false, notas: "", cor: PALETA_CORES_CLIENTE[1] },
+    { id: "caio", nome: "Caio", totalVideos: 30, entregues: 19, valorTotal: 1500, diaPagamento: 10, pago: false, dataPagamento: null, notas: "", cor: PALETA_CORES_CLIENTE[0] },
+    { id: "joao", nome: "João", totalVideos: 30, entregues: 0, valorTotal: 1950, diaPagamento: 15, pago: false, dataPagamento: null, notas: "", cor: PALETA_CORES_CLIENTE[1] },
   ];
 
   // ---------- Estado ----------
@@ -199,6 +311,7 @@
     tarefas: lerJSON(K_TAREFAS, []),
     anotacoes: lerJSON(K_ANOTACOES, []),
     meta: Number(localStorage.getItem(K_META)) || 5000,
+    financeiro: lerJSON(K_FINANCEIRO, { metaReserva: 10000, saldoInicial: 0, meses: [], mesSelecionado: null }),
     tema: localStorage.getItem(K_TEMA) || "escuro",
     ultimoSalvo: new Date().toISOString(),
     verTudoHistorico: false,
@@ -209,18 +322,128 @@
     calAno: new Date().getFullYear(),
   };
 
-  // Migração: clientes salvos antes do sistema de cores não têm o campo "cor".
-  // Atribui automaticamente na primeira vez que o painel carregar.
-  (function migrarCoresClientes() {
+  // Migração: clientes salvos antes do sistema de cores e do histórico por pacote/pagamento.
+  // O objetivo é preservar o que já existe sem apagar os registros anteriores.
+  function garantirEstruturaClientes() {
     let mudou = false;
+
+    function pacoteBase(c, inicio) {
+      return {
+        id: "pacote-" + uid(),
+        inicio: inicio || null,
+        fim: null,
+        totalVideos: Number(c.totalVideos) || 0,
+        entregues: Number(c.entregues) || 0,
+        valorTotal: Number(c.valorTotal) || 0,
+        status: "em-andamento"
+      };
+    }
+
+    const historicoOrdenado = [...state.historico].sort((a, b) => new Date(a.quando) - new Date(b.quando));
+
     state.clientes.forEach((c, i) => {
       if (!c.cor) {
         c.cor = PALETA_CORES_CLIENTE[i % PALETA_CORES_CLIENTE.length];
         mudou = true;
       }
+
+      // Estrutura nova: vários pacotes independentes por cliente.
+      if (!Array.isArray(c.pacotes)) {
+        const eventosPacote = historicoOrdenado.filter(e =>
+          e.clienteNome === c.nome && (e.tipo === "novo-cliente" || e.tipo === "novo-pacote")
+        );
+        const pacotes = [];
+        if (eventosPacote.length) {
+          eventosPacote.forEach((e, idx) => {
+            const inicio = e.quando || null;
+            const p = {
+              id: "pacote-" + uid(),
+              inicio,
+              fim: idx < eventosPacote.length - 1 ? eventosPacote[idx + 1].quando : null,
+              totalVideos: Number(c.totalVideos) || 0,
+              entregues: idx < eventosPacote.length - 1 ? Number(c.totalVideos) || 0 : Number(c.entregues) || 0,
+              valorTotal: Number(c.valorTotal) || 0,
+              status: idx < eventosPacote.length - 1 ? "concluido" : ((Number(c.entregues) || 0) >= (Number(c.totalVideos) || 0) ? "concluido" : "em-andamento")
+            };
+            pacotes.push(p);
+          });
+        } else {
+          pacotes.push(pacoteBase(c, null));
+        }
+        c.pacotes = pacotes;
+        c.pacoteAtualId = c.pacotes[c.pacotes.length - 1].id;
+        mudou = true;
+      }
+
+      if (!c.pacotes.length) {
+        const p = pacoteBase(c, null);
+        c.pacotes = [p];
+        c.pacoteAtualId = p.id;
+        mudou = true;
+      }
+      if (!c.pacoteAtualId || !c.pacotes.some(p => p.id === c.pacoteAtualId)) {
+        c.pacoteAtualId = c.pacotes[c.pacotes.length - 1].id;
+        mudou = true;
+      }
+
+      // Estrutura nova: vários pagamentos independentes, cada um ligado a um pacote.
+      if (!Array.isArray(c.pagamentos)) {
+        const eventosPagamento = historicoOrdenado.filter(e =>
+          e.clienteNome === c.nome && (e.tipo === "pagamento" || e.tipo === "pagamento-desfeito")
+        );
+        const pagamentos = [];
+        eventosPagamento.forEach(e => {
+          if (e.tipo === "pagamento") {
+            let pacote = c.pacotes[0];
+            for (const p of c.pacotes) {
+              if (p.inicio && new Date(p.inicio) <= new Date(e.quando)) pacote = p;
+            }
+            pagamentos.push({
+              id: "pagamento-" + uid(),
+              pacoteId: pacote ? pacote.id : c.pacoteAtualId,
+              valor: Number(e.valor) || Number(c.valorTotal) || 0,
+              data: e.quando,
+              desfeito: false
+            });
+          } else {
+            for (let j = pagamentos.length - 1; j >= 0; j--) {
+              if (!pagamentos[j].desfeito) {
+                pagamentos[j].desfeito = true;
+                break;
+              }
+            }
+          }
+        });
+        c.pagamentos = pagamentos.filter(p => !p.desfeito);
+        // Caso antigo tenha o pagamento atual salvo, preserva-o mesmo sem evento no histórico.
+        if (c.pago && !c.pagamentos.length) {
+          c.pagamentos.push({
+            id: "pagamento-" + uid(),
+            pacoteId: c.pacoteAtualId,
+            valor: Number(c.valorTotal) || 0,
+            data: c.dataPagamento || new Date().toISOString(),
+            desfeito: false
+          });
+        }
+        mudou = true;
+      }
+
+      // O estado antigo continua existindo por compatibilidade, mas agora é derivado do pacote atual.
+      const ativosAtual = c.pagamentos.filter(p => !p.desfeito && p.pacoteId === c.pacoteAtualId);
+      c.pago = ativosAtual.length > 0;
+      c.dataPagamento = ativosAtual.length ? ativosAtual[ativosAtual.length - 1].data : null;
+      const atual = c.pacotes.find(p => p.id === c.pacoteAtualId);
+      if (atual) {
+        atual.totalVideos = Number(c.totalVideos) || atual.totalVideos;
+        atual.valorTotal = Number(c.valorTotal) || atual.valorTotal;
+        atual.entregues = Number(c.entregues) || 0;
+        if (atual.entregues >= atual.totalVideos && atual.totalVideos > 0) atual.status = "concluido";
+      }
     });
+
     if (mudou) salvar(K_CLIENTES, state.clientes);
-  })();
+  }
+  garantirEstruturaClientes();
 
   function lerJSON(chave, padrao) {
     try {
@@ -362,18 +585,63 @@
     if (realDelta === 0) return;
     const eraCompleto = c.entregues >= c.totalVideos;
     c.entregues = novoValor;
+    const pacoteAtual = pacoteAtualCliente(c);
+    if (pacoteAtual) {
+      pacoteAtual.entregues = novoValor;
+      pacoteAtual.totalVideos = Number(c.totalVideos) || pacoteAtual.totalVideos;
+      pacoteAtual.valorTotal = Number(c.valorTotal) || pacoteAtual.valorTotal;
+    }
     salvarClientes();
-    registrarEvento({ tipo: "entrega", clienteNome: c.nome, quantidade: realDelta, totalApos: novoValor });
+    registrarEvento({ tipo: "entrega", clienteNome: c.nome, quantidade: realDelta, totalApos: novoValor, pacoteId: pacoteAtual ? pacoteAtual.id : null });
     if (realDelta > 0) toast("+1 vídeo · " + c.nome + " (" + novoValor + "/" + c.totalVideos + ")", "var(--texto)");
     if (!eraCompleto && novoValor === c.totalVideos) {
+      const pacoteAtual = pacoteAtualCliente(c);
+      if (pacoteAtual) { pacoteAtual.status = "concluido"; pacoteAtual.fim = new Date().toISOString(); }
       toast("🎉 " + c.nome + ": pacote completo!", "var(--verde)");
       registrarConclusao(c);
     }
     render();
   }
+  function pacoteAtualCliente(cliente) {
+    if (!cliente) return null;
+    if (!Array.isArray(cliente.pacotes) || !cliente.pacotes.length) return null;
+    return cliente.pacotes.find(p => p.id === cliente.pacoteAtualId) || cliente.pacotes[cliente.pacotes.length - 1];
+  }
+  function pagamentosDoCliente(cliente) {
+    return cliente && Array.isArray(cliente.pagamentos) ? cliente.pagamentos.filter(p => !p.desfeito) : [];
+  }
+  function pagamentoAtualDoCliente(cliente) {
+    const pacote = pacoteAtualCliente(cliente);
+    if (!pacote) return null;
+    const lista = pagamentosDoCliente(cliente).filter(p => p.pacoteId === pacote.id).sort((a,b) => new Date(a.data) - new Date(b.data));
+    return lista.length ? lista[lista.length - 1] : null;
+  }
   function iniciarNovoPacote(id) {
     const c = encontrarCliente(id); if (!c) return;
-    c.entregues = 0; c.pago = false;
+    const atual = pacoteAtualCliente(c);
+    const agora = new Date().toISOString();
+    if (atual) {
+      atual.fim = agora;
+      atual.status = "concluido";
+      atual.totalVideos = Number(c.totalVideos) || atual.totalVideos;
+      atual.entregues = Math.max(Number(atual.entregues) || 0, Number(c.entregues) || 0);
+      atual.valorTotal = Number(c.valorTotal) || atual.valorTotal;
+    }
+    const novo = {
+      id: "pacote-" + uid(),
+      inicio: agora,
+      fim: null,
+      totalVideos: Number(c.totalVideos) || 0,
+      entregues: 0,
+      valorTotal: Number(c.valorTotal) || 0,
+      status: "em-andamento"
+    };
+    c.pacotes = Array.isArray(c.pacotes) ? c.pacotes : [];
+    c.pacotes.push(novo);
+    c.pacoteAtualId = novo.id;
+    c.entregues = 0;
+    c.pago = false;
+    c.dataPagamento = null;
     salvarClientes();
     registrarEvento({ tipo: "novo-pacote", clienteNome: c.nome, quantidade: c.totalVideos });
     toast("Novo pacote iniciado · " + c.nome, "var(--texto)");
@@ -381,10 +649,25 @@
   }
   function registrarPagamento(id) {
     const c = encontrarCliente(id); if (!c) return;
-    c.pago = !c.pago;
+    const pacote = pacoteAtualCliente(c); if (!pacote) return;
+    const pagamentoAtual = pagamentoAtualDoCliente(c);
+    const agora = new Date().toISOString();
+    if (pagamentoAtual) {
+      c.pagamentos = pagamentosDoCliente(c).filter(p => p.id !== pagamentoAtual.id);
+      c.pago = false;
+      c.dataPagamento = null;
+      registrarEvento({ tipo: "pagamento-desfeito", clienteNome: c.nome, valor: pagamentoAtual.valor, pacoteId: pacote.id });
+      toast("Pagamento de " + c.nome + " desmarcado", "var(--vermelho)");
+    } else {
+      const pagamento = { id: "pagamento-" + uid(), pacoteId: pacote.id, valor: Number(c.valorTotal) || 0, data: agora, desfeito: false };
+      c.pagamentos = Array.isArray(c.pagamentos) ? c.pagamentos : [];
+      c.pagamentos.push(pagamento);
+      c.pago = true;
+      c.dataPagamento = agora;
+      registrarEvento({ tipo: "pagamento", clienteNome: c.nome, valor: pagamento.valor, pacoteId: pacote.id, pagamentoId: pagamento.id });
+      toast("Pagamento de " + c.nome + " recebido", "var(--verde)");
+    }
     salvarClientes();
-    registrarEvento({ tipo: c.pago ? "pagamento" : "pagamento-desfeito", clienteNome: c.nome, valor: c.valorTotal });
-    if (c.pago) toast("Pagamento de " + c.nome + " recebido", "var(--verde)");
     render();
   }
   function removerCliente(id) {
@@ -398,6 +681,12 @@
     const c = encontrarCliente(id); if (!c) return;
     const nomeAntigo = c.nome;
     Object.assign(c, dados);
+    const pacoteAtual = pacoteAtualCliente(c);
+    if (pacoteAtual) {
+      pacoteAtual.totalVideos = Number(c.totalVideos) || pacoteAtual.totalVideos;
+      pacoteAtual.valorTotal = Number(c.valorTotal) || pacoteAtual.valorTotal;
+      pacoteAtual.entregues = Number(c.entregues) || 0;
+    }
     salvarClientes();
     if (nomeAntigo !== dados.nome) registrarEvento({ tipo: "edicao", clienteNome: dados.nome, detalhe: "renomeado de " + nomeAntigo });
     toast(dados.nome + " atualizado", "var(--texto)");
@@ -405,7 +694,9 @@
   }
   function adicionarCliente(dados) {
     const cor = PALETA_CORES_CLIENTE[state.clientes.length % PALETA_CORES_CLIENTE.length];
-    const c = { id: dados.nome.toLowerCase().replace(/\s+/g, "-") + "-" + Date.now(), nome: dados.nome.trim(), totalVideos: dados.totalVideos, entregues: 0, valorTotal: dados.valorTotal, diaPagamento: dados.diaPagamento, pago: false, notas: "", cor };
+    const id = dados.nome.toLowerCase().replace(/\s+/g, "-") + "-" + Date.now();
+    const pacote = { id: "pacote-" + uid(), inicio: new Date().toISOString(), fim: null, totalVideos: dados.totalVideos, entregues: 0, valorTotal: dados.valorTotal, status: "em-andamento" };
+    const c = { id, nome: dados.nome.trim(), totalVideos: dados.totalVideos, entregues: 0, valorTotal: dados.valorTotal, diaPagamento: dados.diaPagamento, pago: false, dataPagamento: null, notas: "", cor, pacotes: [pacote], pacoteAtualId: pacote.id, pagamentos: [] };
     state.clientes.push(c);
     salvarClientes();
     registrarEvento({ tipo: "novo-cliente", clienteNome: c.nome });
@@ -414,16 +705,141 @@
   }
 
   // ---------- Despesas ----------
+  function despesaFixaDoId(id) {
+    garantirFinanceiro();
+    return state.financeiro.despesasFixas.find(f => f.id === id) || null;
+  }
+  function chaveMesDaDataISO(iso) {
+    const d = new Date(iso);
+    return Number.isNaN(d.getTime()) ? null : chaveMesFinanceiro(d.getFullYear(), d.getMonth());
+  }
+  function dataFixaNoMes(fixa, chave) {
+    const [ano, mes] = chave.split('-').map(Number);
+    const ultimoDia = new Date(ano, mes, 0).getDate();
+    const dia = Math.min(Math.max(Number(fixa.dia) || 1, 1), ultimoDia);
+    return new Date(ano, mes - 1, dia, 12, 0, 0).toISOString();
+  }
+  function mesIgualOuDepois(a, b) {
+    return String(a).localeCompare(String(b)) >= 0;
+  }
+  function despesasDoMesFinanceiro(chave) {
+    const reais = state.despesas
+      .filter(d => pertenceAoMesFinanceiro(d.quando, chave))
+      .map(d => ({ ...d, origem: 'registro' }));
+
+    garantirFinanceiro();
+    const idsComRegistro = new Set(reais.filter(d => d.fixaId).map(d => d.fixaId));
+    const virtuais = [];
+    state.financeiro.despesasFixas.forEach(f => {
+      if (!f.ativo) return;
+      if (!mesIgualOuDepois(chave, f.inicio)) return;
+      if (idsComRegistro.has(f.id)) return;
+      virtuais.push({
+        id: 'fixa-' + f.id + '-' + chave,
+        fixaId: f.id,
+        nome: f.nome,
+        valor: Number(f.valor) || 0,
+        categoria: f.categoria || 'Fixa',
+        quando: dataFixaNoMes(f, chave),
+        fixa: true,
+        virtual: true,
+        origem: 'recorrente'
+      });
+    });
+    return [...reais, ...virtuais].sort((a,b) => new Date(b.quando) - new Date(a.quando));
+  }
   function adicionarDespesa(dados) {
-    const d = { id: uid(), nome: dados.nome.trim(), valor: dados.valor, categoria: dados.categoria.trim() || "geral", quando: new Date().toISOString() };
-    state.despesas.unshift(d);
+    const dataBase = dados.quando ? new Date(dados.quando + 'T12:00:00') : new Date();
+    const quando = Number.isNaN(dataBase.getTime()) ? new Date().toISOString() : dataBase.toISOString();
+    if (dados.fixa) {
+      const fixa = {
+        id: 'fixa-' + uid(),
+        nome: dados.nome.trim(),
+        valor: Number(dados.valor) || 0,
+        categoria: dados.categoria.trim() || 'Fixa',
+        dia: dataBase.getDate(),
+        inicio: chaveMesDaDataISO(quando),
+        ativo: true
+      };
+      garantirFinanceiro();
+      state.financeiro.despesasFixas.push(fixa);
+      state.despesas.unshift({ id: uid(), fixaId: fixa.id, fixa: true, nome: fixa.nome, valor: fixa.valor, categoria: fixa.categoria, quando });
+      salvarFinanceiro();
+      salvar(K_DESPESAS, state.despesas);
+      toast('Despesa fixa configurada · repete todos os meses', 'var(--vermelho)');
+    } else {
+      const d = { id: uid(), nome: dados.nome.trim(), valor: Number(dados.valor) || 0, categoria: dados.categoria.trim() || 'Outros', quando };
+      state.despesas.unshift(d);
+      salvar(K_DESPESAS, state.despesas);
+      toast('Despesa "' + d.nome + '" adicionada', 'var(--vermelho)');
+    }
+    render();
+  }
+  function editarDespesa(id, dados) {
+    const d = state.despesas.find(x => x.id === id);
+    if (!d) return;
+    d.nome = dados.nome.trim() || d.nome;
+    d.valor = Number(dados.valor) || d.valor;
+    d.categoria = dados.categoria.trim() || 'Outros';
+    if (dados.quando) {
+      const dt = new Date(dados.quando + 'T12:00:00');
+      if (!Number.isNaN(dt.getTime())) d.quando = dt.toISOString();
+    }
+    if (d.fixaId) {
+      const fixa = despesaFixaDoId(d.fixaId);
+      if (fixa) {
+        fixa.nome = d.nome;
+        fixa.valor = d.valor;
+        fixa.categoria = d.categoria || 'Fixa';
+        if (dados.fixaDia) fixa.dia = Number(dados.fixaDia) || fixa.dia;
+      }
+      salvarFinanceiro();
+    }
     salvar(K_DESPESAS, state.despesas);
-    toast('Despesa "' + d.nome + '" adicionada', "var(--vermelho)");
+    toast(d.fixaId ? 'Despesa fixa atualizada · os próximos meses acompanham' : 'Despesa atualizada', 'var(--texto)');
+    render();
+  }
+  function editarDespesaFixa(fixaId, dados) {
+    const fixa = despesaFixaDoId(fixaId);
+    if (!fixa) return;
+    fixa.nome = dados.nome.trim() || fixa.nome;
+    fixa.valor = Number(dados.valor) || fixa.valor;
+    fixa.categoria = dados.categoria.trim() || 'Fixa';
+    fixa.dia = Number(dados.dia) || fixa.dia;
+    salvarFinanceiro();
+    // Atualiza o lançamento real do mês atual/selecionado, se existir.
+    if (dados.chave) {
+      const ocorrencia = state.despesas.find(d => d.fixaId === fixaId && pertenceAoMesFinanceiro(d.quando, dados.chave));
+      if (ocorrencia) {
+        ocorrencia.nome = fixa.nome;
+        ocorrencia.valor = fixa.valor;
+        ocorrencia.categoria = fixa.categoria;
+        const [ano, mes] = dados.chave.split('-').map(Number);
+        const ultimoDia = new Date(ano, mes, 0).getDate();
+        const dia = Math.min(Math.max(fixa.dia,1), ultimoDia);
+        ocorrencia.quando = new Date(ano, mes-1, dia, 12,0,0).toISOString();
+        salvar(K_DESPESAS, state.despesas);
+      }
+    }
+    toast('Despesa fixa atualizada', 'var(--texto)');
     render();
   }
   function removerDespesa(id) {
-    state.despesas = state.despesas.filter((d) => d.id !== id);
+    const d = state.despesas.find(x => x.id === id);
+    state.despesas = state.despesas.filter(x => x.id !== id);
     salvar(K_DESPESAS, state.despesas);
+    if (d && d.fixaId) {
+      // Remove só este lançamento. A recorrência continua ativa.
+      toast('Lançamento do mês removido · a despesa fixa continua ativa', 'var(--texto)');
+    }
+    render();
+  }
+  function desativarDespesaFixa(fixaId) {
+    const fixa = despesaFixaDoId(fixaId);
+    if (!fixa) return;
+    fixa.ativo = false;
+    salvarFinanceiro();
+    toast('Despesa fixa desativada', 'var(--texto)');
     render();
   }
 
@@ -502,6 +918,275 @@
     render();
   }
 
+
+  // ---------- Financeiro ----------
+  function chaveMesFinanceiro(ano, mes) { return String(ano) + "-" + String(mes + 1).padStart(2, "0"); }
+  function mesAtualFinanceiro() { const d = new Date(); return chaveMesFinanceiro(d.getFullYear(), d.getMonth()); }
+  function garantirFinanceiro() {
+    if (!state.financeiro || typeof state.financeiro !== "object") state.financeiro = { metaReserva: 10000, saldoInicial: 0, meses: [], despesasFixas: [], mesSelecionado: null };
+    if (!Array.isArray(state.financeiro.meses)) state.financeiro.meses = [];
+    if (!Array.isArray(state.financeiro.despesasFixas)) state.financeiro.despesasFixas = [];
+    if (!Number.isFinite(Number(state.financeiro.metaReserva)) || Number(state.financeiro.metaReserva) <= 0) state.financeiro.metaReserva = 10000;
+    if (!Number.isFinite(Number(state.financeiro.saldoInicial))) state.financeiro.saldoInicial = 0;
+    state.financeiro.meses.forEach(m => { m.aportes = Array.isArray(m.aportes) ? m.aportes : []; });
+  }
+  garantirFinanceiro();
+  function salvarFinanceiro() { salvar(K_FINANCEIRO, state.financeiro); }
+
+  // Só cria um mês quando existe uma movimentação financeira real.
+  function obterMesFinanceiro(chave, criar) {
+    garantirFinanceiro();
+    let m = state.financeiro.meses.find(x => x.chave === chave);
+    if (!m && criar) {
+      const [ano, mes] = chave.split("-").map(Number);
+      m = { chave, ano, mes, fechado: false, aportes: [] };
+      state.financeiro.meses.push(m);
+      state.financeiro.meses.sort((a,b) => a.chave.localeCompare(b.chave));
+      salvarFinanceiro();
+    }
+    if (m) m.aportes = Array.isArray(m.aportes) ? m.aportes : [];
+    return m;
+  }
+  function nomeMesChave(chave) {
+    const [ano, mes] = chave.split("-").map(Number);
+    const d = new Date(ano, mes - 1, 1);
+    const n = d.toLocaleDateString("pt-BR", { month:"long", year:"numeric" });
+    return n.charAt(0).toUpperCase() + n.slice(1);
+  }
+  function dataPagamentoCliente(cliente) {
+    const pagamento = pagamentoAtualDoCliente(cliente);
+    if (pagamento) return pagamento.data;
+    if (cliente && cliente.dataPagamento) return cliente.dataPagamento;
+    return null;
+  }
+  function todosPagamentosCliente(cliente) {
+    return pagamentosDoCliente(cliente);
+  }
+  function pagamentosDoMesCliente(cliente, chave) {
+    return todosPagamentosCliente(cliente).filter(p => pertenceAoMesFinanceiro(p.data, chave));
+  }
+  function pagamentoNoMesCliente(cliente, chave) {
+    const lista = pagamentosDoMesCliente(cliente, chave).sort((a,b) => new Date(a.data) - new Date(b.data));
+    return lista.length ? lista[lista.length - 1] : null;
+  }
+  function dataPrevistaPagamentoMes(cliente, ano, mesZero) {
+    if (!cliente || !Number(cliente.diaPagamento)) return null;
+    const ultimoDia = new Date(ano, mesZero + 1, 0).getDate();
+    const dia = Math.min(Math.max(Number(cliente.diaPagamento), 1), ultimoDia);
+    return new Date(ano, mesZero, dia, 12, 0, 0);
+  }
+  function pertenceAoMesFinanceiro(iso, chave) {
+    if (!iso) return false;
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return false;
+    return chaveMesFinanceiro(d.getFullYear(), d.getMonth()) === chave;
+  }
+  function aportesDoMes(chave) {
+    const m = obterMesFinanceiro(chave, false);
+    return m ? m.aportes : [];
+  }
+  function dadosFinanceirosMes(chave) {
+    const recebido = state.clientes.reduce((s,c) => s + pagamentosDoMesCliente(c, chave).reduce((a,p) => a + Number(p.valor || 0), 0), 0);
+    const despesas = despesasDoMesFinanceiro(chave).reduce((s,d) => s + Number(d.valor || 0), 0);
+    const aportes = aportesDoMes(chave).reduce((s,a) => s + Number(a.valor || 0), 0);
+    return { recebido, despesas, aportes, liquido: recebido - despesas, disponivel: recebido - despesas - aportes };
+  }
+  function mesesComMovimentacaoFinanceira() {
+    const set = new Set();
+    state.clientes.forEach(c => { todosPagamentosCliente(c).forEach(p => { const dt = new Date(p.data); if (!Number.isNaN(dt.getTime())) set.add(chaveMesFinanceiro(dt.getFullYear(), dt.getMonth())); }); });
+    state.despesas.forEach(d => { const dt = new Date(d.quando); if (!Number.isNaN(dt.getTime())) set.add(chaveMesFinanceiro(dt.getFullYear(), dt.getMonth())); });
+    state.financeiro.meses.forEach(m => { if (m.aportes && m.aportes.length) set.add(m.chave); });
+    return [...set].sort((a,b) => b.localeCompare(a));
+  }
+  function totalReserva() {
+    garantirFinanceiro();
+    return Number(state.financeiro.saldoInicial || 0) + state.financeiro.meses.reduce((s,m) => s + (m.aportes || []).reduce((a,x) => a + Number(x.valor || 0), 0), 0);
+  }
+  function salvarAporteFinanceiro(chave, dados, id) {
+    const m = obterMesFinanceiro(chave, true);
+    if (id) {
+      const item = m.aportes.find(x => x.id === id);
+      if (item) Object.assign(item, dados);
+    } else {
+      m.aportes.unshift({ id: uid(), ...dados, criadoEm: new Date().toISOString() });
+    }
+    salvarFinanceiro();
+    toast(id ? "Aporte atualizado" : "Aporte registrado", "var(--verde)");
+    render();
+  }
+  function removerAporteFinanceiro(chave, id) {
+    const m = obterMesFinanceiro(chave, false);
+    if (!m) return;
+    m.aportes = m.aportes.filter(x => x.id !== id);
+    if (!m.aportes.length && !m.fechado) state.financeiro.meses = state.financeiro.meses.filter(x => x.chave !== chave);
+    salvarFinanceiro();
+    render();
+  }
+  function alternarMesFinanceiro(chave) {
+    const m = obterMesFinanceiro(chave, false);
+    if (!m) return;
+    m.fechado = !m.fechado;
+    salvarFinanceiro();
+    render();
+  }
+  function abrirModalAporteFinanceiro(chave, id) {
+    const m = obterMesFinanceiro(chave, false);
+    const item = id && m ? m.aportes.find(x => x.id === id) : null;
+    abrirModal(item ? "Editar aporte" : "Registrar aporte",
+      '<div style="display:flex;flex-direction:column;gap:9px;">' +
+      '<div style="font-size:9px;color:var(--cinzaClaro);">' + esc(nomeMesChave(chave)) + ' · esse valor será descontado automaticamente do disponível.</div>' +
+      '<input class="input-field" id="fin-aporte-nome" value="' + esc(item?.nome || "CDB / reserva de emergência") + '" placeholder="onde guardou?">' +
+      '<input class="input-field" id="fin-aporte-valor" type="number" step="0.01" value="' + (item?.valor ?? "") + '" placeholder="valor guardado">' +
+      '<input class="input-field" id="fin-aporte-data" type="date" value="' + esc(item?.data || (chave + "-01")) + '">' +
+      '<textarea class="input-field" id="fin-aporte-obs" style="resize:vertical;min-height:55px;" placeholder="observação (opcional)">' + esc(item?.obs || "") + '</textarea>' +
+      '<div style="display:flex;gap:8px;margin-top:3px;">' +
+      '<button class="btn btn-dark" id="fin-aporte-salvar" style="flex:1;">salvar</button>' + (item ? '<button class="btn" id="fin-aporte-remover" style="color:var(--vermelho);">remover</button>' : '') +
+      '</div></div>',
+      () => {
+        document.getElementById("fin-aporte-salvar").addEventListener("click", () => {
+          const nome = document.getElementById("fin-aporte-nome").value.trim();
+          const valor = Number(document.getElementById("fin-aporte-valor").value);
+          if (!nome || !valor || valor < 0) return toast("Preencha onde guardou e o valor", "var(--vermelho)");
+          salvarAporteFinanceiro(chave, { nome, valor, data: document.getElementById("fin-aporte-data").value || chave + "-01", obs: document.getElementById("fin-aporte-obs").value.trim() }, id);
+          fecharModal();
+        });
+        if (item) document.getElementById("fin-aporte-remover").addEventListener("click", () => { removerAporteFinanceiro(chave, id); fecharModal(); });
+      }
+    );
+  }
+  function abrirModalMetaReserva() {
+    abrirModal("Reserva de emergência",
+      '<div style="display:flex;flex-direction:column;gap:9px;">' +
+      '<input class="input-field" id="fin-meta" type="number" step="0.01" value="' + Number(state.financeiro.metaReserva || 10000) + '" placeholder="meta da reserva">' +
+      '<input class="input-field" id="fin-saldo" type="number" step="0.01" value="' + Number(state.financeiro.saldoInicial || 0) + '" placeholder="saldo que já existia">' +
+      '<div style="font-size:9px;color:var(--cinzaClaro);">O saldo inicial não altera o disponível do mês. Ele apenas define quanto já existia na reserva antes deste controle.</div>' +
+      '<button class="btn btn-dark" id="fin-meta-salvar">salvar</button></div>',
+      () => document.getElementById("fin-meta-salvar").addEventListener("click", () => {
+        state.financeiro.metaReserva = Math.max(0, Number(document.getElementById("fin-meta").value) || 0);
+        state.financeiro.saldoInicial = Math.max(0, Number(document.getElementById("fin-saldo").value) || 0);
+        salvarFinanceiro(); fecharModal(); render();
+      })
+    );
+  }
+  function abrirModalMesFinanceiro(chave) {
+    const t = dadosFinanceirosMes(chave), aportes = aportesDoMes(chave), m = obterMesFinanceiro(chave, false);
+    abrirModal("Resumo de " + nomeMesChave(chave),
+      '<div style="display:flex;flex-direction:column;gap:8px;">' +
+      '<div class="financeiro-item"><span>Recebido</span><b class="num" style="color:var(--verde)">' + brl(t.recebido) + '</b></div>' +
+      '<div class="financeiro-item"><span>Despesas</span><b class="num" style="color:var(--vermelho)">' + brl(t.despesas) + '</b></div>' +
+      '<div class="financeiro-item"><span>Valor líquido</span><b class="num">' + brl(t.liquido) + '</b></div>' +
+      '<div class="financeiro-item"><span>Guardado</span><b class="num" style="color:var(--azul)">' + brl(t.aportes) + '</b></div>' +
+      '<div class="financeiro-item"><span>Disponível</span><b class="num" style="color:' + (t.disponivel >= 0 ? 'var(--texto)' : 'var(--vermelho)') + '">' + brl(t.disponivel) + '</b></div>' +
+      (m ? '<button class="btn" id="fin-check" style="margin-top:4px;">' + (m.fechado ? '✓ mês conferido' : 'marcar mês como conferido') + '</button>' : '') +
+      '</div>',
+      () => { const b = document.getElementById("fin-check"); if (b) b.addEventListener("click", () => { alternarMesFinanceiro(chave); fecharModal(); }); }
+    );
+  }
+  function abrirModalMetaFinanceiroMes(chave) {
+    abrirModal("Meta de receita · " + nomeMesChave(chave),
+      '<div style="display:flex;flex-direction:column;gap:9px;"><div style="font-size:9px;color:var(--cinzaClaro);">Defina quanto você quer receber neste mês. A meta é independente da reserva.</div><input class="input-field" id="fin-meta-receita-local" type="number" step="0.01" value="' + Number(state.meta || 0) + '" placeholder="meta de receita"><button class="btn btn-dark" id="fin-meta-receita-local-salvar">salvar meta</button></div>',
+      () => document.getElementById("fin-meta-receita-local-salvar").addEventListener("click", () => { salvarMeta(Math.max(0, Number(document.getElementById("fin-meta-receita-local").value) || 0)); fecharModal(); })
+    );
+  }
+  function abrirModalFinanceiroDetalhe(tipo, chave) {
+    const t = dadosFinanceirosMes(chave);
+    const recebimentos = [];
+    state.clientes.forEach(c => { pagamentosDoMesCliente(c, chave).forEach(p => recebimentos.push({ cliente: c, pagamento: p })); });
+    const despesas = despesasDoMesFinanceiro(chave);
+    const aportes = aportesDoMes(chave);
+    let titulo = "Detalhes · " + nomeMesChave(chave), corpo = '';
+    if (tipo === "recebido") {
+      titulo = "Recebimentos · " + nomeMesChave(chave);
+      corpo = '<div style="display:flex;flex-direction:column;gap:4px;">' + (recebimentos.length ? recebimentos.map(r => '<div class="financeiro-item"><span class="financeiro-item-dot" style="background:var(--verde)"></span><div class="financeiro-item-info"><div class="financeiro-item-nome">' + esc(r.cliente.nome) + '</div><div class="financeiro-item-sub">Recebido em ' + new Date(r.pagamento.data).toLocaleDateString('pt-BR') + '</div></div><strong class="num financeiro-item-value" style="color:var(--verde)">+ ' + brl(r.pagamento.valor) + '</strong></div>').join('') : '<div class="financeiro-empty">Nenhum recebimento neste mês.</div>') + '</div>';
+    } else if (tipo === "despesas") {
+      titulo = "Despesas · " + nomeMesChave(chave);
+      corpo = '<div style="display:flex;flex-direction:column;gap:4px;">' + (despesas.length ? despesas.map(d => '<div class="financeiro-item acao-editar-despesa" data-id="' + esc(d.id) + '" data-fixa-id="' + esc(d.fixaId || '') + '" data-virtual="' + (d.virtual ? '1' : '0') + '"><span class="financeiro-item-dot" style="background:var(--vermelho)"></span><div class="financeiro-item-info"><div class="financeiro-item-nome">' + esc(d.nome) + '</div><div class="financeiro-item-sub">' + esc(d.categoria || "Outros") + (d.virtual ? ' · fixa · prevista' : d.fixa ? ' · fixa' : '') + ' · ' + new Date(d.quando).toLocaleDateString('pt-BR') + '</div></div><strong class="num financeiro-item-value" style="color:var(--vermelho)">− ' + brl(d.valor) + '</strong></div>').join('') : '<div class="financeiro-empty">Nenhuma despesa neste mês.</div>') + '<div style="border-top:1px solid var(--borda);margin-top:8px;padding-top:10px;display:flex;justify-content:space-between;font-size:10px;"><span>Total</span><b class="num" style="color:var(--vermelho)">' + brl(t.despesas) + '</b></div></div>';
+    } else if (tipo === "liquido") {
+      titulo = "Resumo · " + nomeMesChave(chave);
+      corpo = '<div style="display:flex;flex-direction:column;gap:8px;"><div class="financeiro-item"><span>Recebido</span><b class="num" style="color:var(--verde)">' + brl(t.recebido) + '</b></div><div class="financeiro-item"><span>Despesas</span><b class="num" style="color:var(--vermelho)">− ' + brl(t.despesas) + '</b></div><div class="financeiro-item" style="background:var(--inputBg)"><span><b>Valor líquido</b></span><b class="num">' + brl(t.liquido) + '</b></div></div>';
+    } else {
+      titulo = "Movimentações · " + nomeMesChave(chave);
+      const mov = [...recebimentos.map(r=>({nome:r.cliente.nome,detalhe:'Recebimento',valor:r.pagamento.valor,data:r.pagamento.data,cor:'var(--verde)'})), ...despesas.map(d=>({nome:d.nome,detalhe:d.categoria||'Despesa',valor:d.valor,data:d.quando,cor:'var(--vermelho)'})), ...aportes.map(a=>({nome:a.nome,detalhe:'Aporte',valor:a.valor,data:a.data,cor:'var(--azul)'}))].sort((a,b)=>new Date(b.data||0)-new Date(a.data||0));
+      corpo = '<div style="display:flex;flex-direction:column;gap:3px;">' + (mov.length ? mov.map(x=>'<div class="financeiro-item"><span class="financeiro-item-dot" style="background:' + x.cor + '"></span><div class="financeiro-item-info"><div class="financeiro-item-nome">' + esc(x.nome) + '</div><div class="financeiro-item-sub">' + esc(x.detalhe) + ' · ' + new Date(x.data).toLocaleDateString('pt-BR') + '</div></div><strong class="num financeiro-item-value" style="color:' + x.cor + '">' + (x.cor==='var(--verde)'?'+ ':'− ') + brl(x.valor) + '</strong></div>').join('') : '<div class="financeiro-empty">Nenhuma movimentação neste mês.</div>') + '</div>';
+    }
+    abrirModal(titulo, corpo, () => {
+      document.querySelectorAll('#modal-body .acao-editar-despesa').forEach(el => el.addEventListener('click', () => { abrirModalDespesa(null, el.dataset.id); }));
+    });
+  }
+
+  function renderFinanceiro() {
+    garantirFinanceiro();
+    const chave = state.financeiro.mesSelecionado || mesAtualFinanceiro();
+    const t = dadosFinanceirosMes(chave);
+    const reserva = totalReserva();
+    const metaReserva = Number(state.financeiro.metaReserva || 0);
+    const pctReserva = metaReserva > 0 ? Math.min(Math.round((reserva / metaReserva) * 100), 100) : 0;
+    // A meta de receita é automática: corresponde à receita prevista dos clientes ativos.
+    // Não é necessário preencher a mesma informação manualmente em outro lugar.
+    const metaReceita = state.clientes.reduce((s, c) => s + Number(c.valorTotal || 0), 0);
+    const pctReceita = metaReceita > 0 ? Math.min(Math.round((t.recebido / metaReceita) * 100), 100) : 0;
+    const despesasMes = despesasDoMesFinanceiro(chave);
+    const movimentos = [
+      ...state.clientes.flatMap(c => pagamentosDoMesCliente(c, chave).map(p => ({tipo:"recebido",nome:c.nome,detalhe:"Pagamento recebido",valor:p.valor,data:p.data,cor:"var(--verde)",pacoteId:p.pacoteId}))),
+      ...despesasMes.map(d => ({tipo:"despesa",nome:d.nome,detalhe:d.categoria || "Despesa",valor:d.valor,data:d.quando,cor:"var(--vermelho)",id:d.id,fixaId:d.fixaId,fixa:d.fixa,virtual:d.virtual})),
+      ...aportesDoMes(chave).map(a => ({tipo:"aporte",nome:a.nome,detalhe:"Reserva / investimento",valor:a.valor,data:a.data,cor:"var(--azul)",id:a.id}))
+    ].sort((a,b) => new Date(b.data || 0) - new Date(a.data || 0));
+    const ultimos = movimentos.slice(0,5);
+    const meses = mesesComMovimentacaoFinanceira();
+    const raio=37, circ=2*Math.PI*raio, offset=circ-(circ*pctReserva/100);
+
+    const base = Math.max(t.recebido, 0);
+    const pctDespesaVisual = base > 0 ? Math.min((t.despesas / base) * 100, 100) : 0;
+    const pctAporteVisual = base > 0 ? Math.min((t.aportes / base) * 100, Math.max(0, 100 - pctDespesaVisual)) : 0;
+    const pctDisponivelVisual = base > 0 ? Math.max(0, 100 - pctDespesaVisual - pctAporteVisual) : 0;
+
+    let h='<section class="card financeiro-card" id="financeiro">';
+    h+='<div class="financeiro-top"><div><h2 class="heading financeiro-title">Financeiro</h2><span class="financeiro-caption">Tudo sobre o seu dinheiro, em um só lugar.</span></div>';
+    h+='<div class="financeiro-month-nav"><button class="financeiro-nav-btn" id="fin-mes-ant" aria-label="Mês anterior">‹</button><span class="financeiro-month-name">'+esc(nomeMesChave(chave))+'</span><button class="financeiro-nav-btn" id="fin-mes-prox" aria-label="Próximo mês">›</button><button class="financeiro-nav-today" id="fin-mes-hoje">hoje</button></div></div>';
+
+    h+='<div class="financeiro-actions">';
+    h+='<button class="financeiro-action" id="fin-acao-despesa"><strong>＋</strong> adicionar despesa</button>';
+    h+='<button class="financeiro-action primary" id="fin-acao-aporte"><strong>＋</strong> guardar dinheiro</button>';
+    h+='<button class="financeiro-action" id="fin-acao-receita"><strong>↗</strong> ver recebimentos</button>';
+    h+='</div>';
+
+    const saldo = t.disponivel;
+    h+='<div class="financeiro-hero"><div class="financeiro-hero-top"><div><span class="financeiro-hero-label">Saldo disponível para gastar</span><strong class="num financeiro-hero-value" style="color:'+(saldo>=0?'var(--destaqueTexto)':'var(--vermelho)')+'">'+brl(saldo)+'</strong><div class="financeiro-hero-note">Recebido − despesas − valores guardados</div><div class="financeiro-hero-formula"><span class="financeiro-formula-chip">Recebido '+brl(t.recebido)+'</span><span class="financeiro-formula-chip">− Despesas '+brl(t.despesas)+'</span><span class="financeiro-formula-chip">− Guardado '+brl(t.aportes)+'</span></div></div>';
+    h+='<div class="financeiro-mini-meta"><span class="financeiro-mini-meta-label">Meta de receita</span><strong class="num financeiro-mini-meta-value">'+brl(t.recebido)+' <span style="opacity:.5">/</span> '+brl(metaReceita)+'</strong><div class="financeiro-mini-bar"><div class="financeiro-mini-fill" style="width:'+pctReceita+'%"></div></div><span class="financeiro-mini-meta-note">baseada nos clientes ativos</span></div></div></div>';
+
+    h+='<div class="financeiro-summary">';
+    h+='<div class="financeiro-summary-item" data-fin-detail="recebido"><span class="financeiro-summary-label">Recebido</span><strong class="num financeiro-summary-value" style="color:var(--verde)">'+brl(t.recebido)+'</strong><span class="financeiro-summary-note">ver detalhes</span></div>';
+    h+='<div class="financeiro-summary-item" data-fin-detail="despesas"><span class="financeiro-summary-label">Despesas</span><strong class="num financeiro-summary-value" style="color:var(--vermelho)">'+brl(t.despesas)+'</strong><span class="financeiro-summary-note">ver despesas</span></div>';
+    h+='<div class="financeiro-summary-item" data-fin-detail="liquido"><span class="financeiro-summary-label">Líquido</span><strong class="num financeiro-summary-value">'+brl(t.liquido)+'</strong><span class="financeiro-summary-note">antes de guardar</span></div>';
+    h+='</div>';
+
+    h+='<div class="financeiro-grid">';
+    h+='<div class="financeiro-column">';
+    h+='<div class="financeiro-panel"><div class="financeiro-panel-head"><div><div class="financeiro-panel-title">Movimentações recentes</div><span class="financeiro-panel-sub">Entradas, saídas e valores guardados</span></div><button class="financeiro-view-all" id="fin-ver-movimentos">ver tudo</button></div><div class="financeiro-lista">';
+    if(!ultimos.length) h+='<div class="financeiro-empty">Nenhuma movimentação neste mês.</div>';
+    ultimos.forEach(x=>{const sinal=x.tipo==='despesa'||x.tipo==='aporte'?'− ':'+ ';h+='<div class="financeiro-item '+(x.tipo==='despesa'?'acao-editar-despesa':'')+'" '+(x.tipo==='despesa'?'data-id="'+esc(x.id)+'" data-fixa-id="'+esc(x.fixaId||'')+'" data-virtual="'+(x.virtual?'1':'0')+'"':'')+'><span class="financeiro-item-dot" style="background:'+x.cor+'"></span><div class="financeiro-item-info"><div class="financeiro-item-nome">'+esc(x.nome)+'</div><div class="financeiro-item-sub">'+esc(x.detalhe)+(x.virtual?' · fixa · prevista':x.fixa?' · fixa':'')+(x.data?' · '+new Date(x.data).toLocaleDateString('pt-BR'):'')+'</div></div><strong class="num financeiro-item-value" style="color:'+x.cor+'">'+sinal+brl(x.valor)+'</strong></div>';});
+    h+='</div>';
+    h+='<div class="financeiro-composicao"><div class="financeiro-composicao-head"><span class="financeiro-composicao-title">Destino do dinheiro neste mês</span><span class="num financeiro-composicao-total">'+brl(t.recebido)+'</span></div><div class="financeiro-composicao-bar"><span class="financeiro-composicao-seg despesa" style="width:'+pctDespesaVisual+'%"></span><span class="financeiro-composicao-seg aporte" style="width:'+pctAporteVisual+'%"></span><span class="financeiro-composicao-seg disponivel" style="width:'+pctDisponivelVisual+'%"></span></div><div class="financeiro-composicao-legend"><span class="financeiro-comp-leg"><i class="financeiro-comp-dot" style="background:var(--vermelho)"></i>despesas '+Math.round(pctDespesaVisual)+'%</span><span class="financeiro-comp-leg"><i class="financeiro-comp-dot" style="background:var(--azul)"></i>guardado '+Math.round(pctAporteVisual)+'%</span><span class="financeiro-comp-leg"><i class="financeiro-comp-dot" style="background:var(--verde)"></i>disponível '+Math.round(pctDisponivelVisual)+'%</span></div></div>';
+    h+='</div>';
+
+    h+='<div class="financeiro-panel"><div class="financeiro-panel-head"><div><div class="financeiro-panel-title">Despesas do mês</div><span class="financeiro-panel-sub">Total '+brl(t.despesas)+'</span></div><button class="financeiro-add" id="btn-nova-despesa" aria-label="Adicionar despesa">＋</button></div><div class="financeiro-lista">';
+    if(!despesasMes.length) h+='<div class="financeiro-empty">Nenhuma despesa registrada.<br><button class="financeiro-small-btn" id="fin-empty-despesa">Adicionar despesa</button></div>';
+    despesasMes.slice(0,6).forEach(d=>{h+='<div class="financeiro-item acao-editar-despesa" data-id="'+esc(d.id)+'"><span class="financeiro-item-dot" style="background:var(--vermelho)"></span><div class="financeiro-item-info"><div class="financeiro-item-nome">'+esc(d.nome)+'</div><div class="financeiro-item-sub">'+esc(d.categoria||'Outros')+' · '+new Date(d.quando).toLocaleDateString('pt-BR')+'</div></div><strong class="num financeiro-item-value" style="color:var(--vermelho)">− '+brl(d.valor)+'</strong></div>';});
+    if(despesasMes.length>6) h+='<div class="financeiro-empty" style="padding:7px">+'+(despesasMes.length-6)+' outras · <button class="financeiro-small-btn" id="fin-ver-despesas">ver tudo</button></div>';
+    h+='</div></div></div>';
+
+    h+='<div class="financeiro-column">';
+    h+='<div class="financeiro-panel"><div class="financeiro-panel-head"><div><div class="financeiro-panel-title">Reserva de emergência</div><span class="financeiro-panel-sub">Seu objetivo de segurança</span></div><button class="financeiro-reserva-edit" id="fin-editar-meta">editar</button></div><div class="financeiro-reserva"><div class="financeiro-reserva-ring"><svg viewBox="0 0 92 92"><circle class="financeiro-reserva-ring-track" cx="46" cy="46" r="37"></circle><circle class="financeiro-reserva-ring-fill" cx="46" cy="46" r="37" stroke-dasharray="'+circ+'" stroke-dashoffset="'+offset+'"></circle></svg><div class="financeiro-reserva-ring-center"><strong class="financeiro-reserva-ring-pct">'+pctReserva+'%</strong><span class="financeiro-reserva-ring-label">da meta</span></div></div><div class="financeiro-reserva-info"><span class="financeiro-reserva-label">Acumulado</span><strong class="num financeiro-reserva-value">'+brl(reserva)+'</strong><div class="financeiro-reserva-meta"><span>meta '+brl(metaReserva)+'</span><span>'+(metaReserva>reserva?'faltam '+brl(metaReserva-reserva):metaReserva===0?'defina uma meta':'meta atingida')+'</span></div><div class="financeiro-reserva-actions"><span style="font-size:7.5px;color:var(--cinzaClaro)">Aportes entram aqui.</span><button class="financeiro-small-btn" id="fin-add-aporte">+ guardar</button></div></div></div></div>';
+
+    h+='</div></div>';
+
+    h+='<div class="financeiro-history"><div class="financeiro-history-head"><div><div class="financeiro-history-title">Histórico financeiro</div><div class="financeiro-history-sub">Meses com movimentações reais.</div></div></div><div class="financeiro-history-header"><span>Mês</span><span>Recebido</span><span>Despesas</span><span>Guardado</span><span>Disponível</span></div>';
+    if(!meses.length) h+='<div class="financeiro-empty">Nenhum mês com movimentações ainda.</div>';
+    meses.forEach(mes=>{const x=dadosFinanceirosMes(mes),obj=obterMesFinanceiro(mes,false),marcado=obj?.fechado;h+='<div class="financeiro-history-row acao-fin-mes" data-chave="'+esc(mes)+'"><span class="financeiro-history-month">'+esc(nomeMesChave(mes))+(marcado?'<span class="financeiro-history-check">✓</span>':'')+'</span><span class="num financeiro-history-value positive">'+brl(x.recebido)+'</span><span class="num financeiro-history-value negative">'+brl(x.despesas)+'</span><span class="num financeiro-history-value invest">'+brl(x.aportes)+'</span><span class="num financeiro-history-value '+(x.disponivel>=0?'positive':'negative')+'">'+brl(x.disponivel)+'</span></div>';});
+    h+='</div></section>';
+    return h;
+  }
+
   // ---------- Tema ----------
   function alternarTema() {
     state.tema = state.tema === "escuro" ? "claro" : "escuro";
@@ -519,7 +1204,8 @@
     localStorage.removeItem(K_META);
     localStorage.removeItem(K_TAREFAS);
     localStorage.removeItem(K_ANOTACOES);
-    state.clientes = []; state.historico = []; state.conclusoes = []; state.despesas = []; state.tarefas = []; state.anotacoes = []; state.meta = 5000;
+    localStorage.removeItem(K_FINANCEIRO);
+    state.clientes = []; state.historico = []; state.conclusoes = []; state.despesas = []; state.tarefas = []; state.anotacoes = []; state.meta = 5000; state.financeiro = { metaReserva:10000, saldoInicial:0, meses:[], despesasFixas:[], mesSelecionado:null };
     state.confirmarReset = false;
     toast("Painel resetado", "var(--vermelho)");
     render();
@@ -535,7 +1221,7 @@
     URL.revokeObjectURL(url);
   }
   function baixarBackup() {
-    const dados = { clientes: state.clientes, historico: state.historico, conclusoes: state.conclusoes, despesas: state.despesas, tarefas: state.tarefas, anotacoes: state.anotacoes, meta: state.meta, tema: state.tema, versao: 2, exportadoEm: new Date().toISOString() };
+    const dados = { clientes: state.clientes, historico: state.historico, conclusoes: state.conclusoes, despesas: state.despesas, tarefas: state.tarefas, anotacoes: state.anotacoes, meta: state.meta, financeiro: state.financeiro, tema: state.tema, versao: 4, exportadoEm: new Date().toISOString() };
     baixarArquivo("backup-soars-" + new Date().toISOString().slice(0, 10) + ".json", JSON.stringify(dados, null, 2), "application/json");
     toast("Backup baixado", "var(--texto)");
   }
@@ -550,6 +1236,8 @@
         if (dados.despesas) { state.despesas = dados.despesas; salvar(K_DESPESAS, state.despesas); }
         if (dados.tarefas) { state.tarefas = dados.tarefas; salvar(K_TAREFAS, state.tarefas); }
         if (dados.anotacoes) { state.anotacoes = dados.anotacoes; salvar(K_ANOTACOES, state.anotacoes); }
+        garantirEstruturaClientes();
+        if (dados.financeiro) { state.financeiro = dados.financeiro; garantirFinanceiro(); salvarFinanceiro(); }
         if (typeof dados.meta === "number") { state.meta = dados.meta; salvar(K_META, String(dados.meta)); }
         toast("Backup importado com sucesso", "var(--verde)");
         render();
@@ -561,8 +1249,6 @@
     const receitaMensal = state.clientes.reduce((s, c) => s + c.valorTotal, 0);
     const recebido = state.clientes.filter((c) => c.pago).reduce((s, c) => s + c.valorTotal, 0);
     const aReceber = receitaMensal - recebido;
-    const totalDespesas = state.despesas.reduce((s, d) => s + d.valor, 0);
-    const lucroLiquido = receitaMensal - totalDespesas;
     const totalEntregues = state.clientes.reduce((s, c) => s + c.entregues, 0);
     const totalVideos = state.clientes.reduce((s, c) => s + c.totalVideos, 0);
     const hoje = new Date().toLocaleDateString("pt-BR");
@@ -630,7 +1316,13 @@
         .map((ev) => new Date(ev.quando)).filter((d) => d.getFullYear() === ano && d.getMonth() === mes).map((d) => d.getDate())
     );
     const pagamentosPorDia = {};
-    state.clientes.forEach((c) => { (pagamentosPorDia[c.diaPagamento] = pagamentosPorDia[c.diaPagamento] || []).push(c); });
+    const chaveCalendario = chaveMesFinanceiro(ano, mes);
+    state.clientes.forEach((c) => {
+      const previsto = dataPrevistaPagamentoMes(c, ano, mes);
+      if (!previsto) return;
+      const diaPrevisto = previsto.getDate();
+      (pagamentosPorDia[diaPrevisto] = pagamentosPorDia[diaPrevisto] || []).push({ cliente: c, recebido: !!pagamentoNoMesCliente(c, chaveCalendario) });
+    });
     const tarefasPorDia = {};
     state.tarefas.forEach((t) => {
       if (!t.prazo) return;
@@ -647,7 +1339,7 @@
       const teveEntrega = diasComEntrega.has(d);
       const tarefasDoDia = tarefasPorDia[d];
       let corPagamento = null;
-      if (pagamentos) corPagamento = pagamentos.some((c) => !c.pago) ? "var(--laranja)" : "var(--verde)";
+      if (pagamentos) corPagamento = pagamentos.some((p) => !p.recebido) ? "var(--laranja)" : "var(--verde)";
       let dots = "";
       if (corPagamento) dots += '<span class="cal-dot" style="background:' + (ehHoje ? "var(--destaqueTexto)" : corPagamento) + '"></span>';
       if (teveEntrega) dots += '<span class="cal-dot" style="background:' + (ehHoje ? "var(--destaqueTexto)" : "var(--cinzaClaro)") + '"></span>';
@@ -665,8 +1357,10 @@
   function renderPagamentos() {
     const lista = [...state.clientes].sort((a, b) => diasAteDia(a.diaPagamento) - diasAteDia(b.diaPagamento));
     if (lista.length === 0) return '<span style="font-size:10px;color:var(--cinzaClaro);">nenhum cliente ainda.</span>';
+    const mesAtual = mesAtualFinanceiro();
     return lista.map((c) => {
-      const st = statusPagamento(c);
+      const stBase = statusPagamento(c);
+      const st = pagamentoNoMesCliente(c, mesAtual) ? { cor: "var(--verde)", texto: "recebido" } : stBase;
       return '<div class="pagamento-row"><div style="display:flex;gap:8px;align-items:center;">' +
         '<div class="pagamento-avatar num" style="background:color-mix(in srgb, ' + (c.cor || "var(--cinzaClaro)") + ' 22%, transparent);color:' + (c.cor || "var(--texto)") + ';">' + esc(iniciais(c.nome)) + '</div>' +
         '<div><b style="font-size:10.5px;">' + esc(c.nome) + '</b><small style="display:block;color:' + st.cor + ';font-size:8.5px;font-weight:600;">' + st.texto + '</small></div></div>' +
@@ -818,29 +1512,20 @@
     ).join("");
   }
 
-  function renderDespesas() {
-    if (state.despesas.length === 0) return "";
-    return state.despesas.map((d) =>
-      '<div class="despesa-row"><span style="display:flex;gap:8px;align-items:center;"><span class="dot" style="width:6px;height:6px;background:var(--vermelho);"></span><b>' + esc(d.nome) + '</b>' +
-      '<span style="color:var(--cinzaClaro);font-size:9.5px;padding:2px 7px;border-radius:99px;background:var(--card);">' + esc(d.categoria) + '</span></span>' +
-      '<span style="display:flex;align-items:center;gap:10px;"><span class="num" style="font-weight:600;color:var(--vermelho);">' + brl(d.valor) + '</span>' +
-      '<button class="acao-remover-despesa" data-id="' + esc(d.id) + '" style="background:transparent;border:none;color:var(--cinzaClaro);font-size:13px;cursor:pointer;">✕</button></span></div>'
-    ).join("");
-  }
-
   function render() {
     document.body.setAttribute("data-theme", state.tema);
 
     const receitaMensal = state.clientes.reduce((s, c) => s + c.valorTotal, 0);
     const totalEntregues = state.clientes.reduce((s, c) => s + c.entregues, 0);
     const totalVideos = state.clientes.reduce((s, c) => s + c.totalVideos, 0);
-    const recebido = state.clientes.filter((c) => c.pago).reduce((s, c) => s + c.valorTotal, 0);
-    const aReceber = receitaMensal - recebido;
-    const metaPct = state.meta > 0 ? Math.min(Math.round((receitaMensal / state.meta) * 100), 100) : 0;
-    const totalDespesas = state.despesas.reduce((s, d) => s + d.valor, 0);
-    const lucroLiquido = receitaMensal - totalDespesas;
+    const mesDashboard = chaveMesFinanceiro(new Date().getFullYear(), new Date().getMonth());
+    const recebido = state.clientes.reduce((s, c) => s + pagamentosDoMesCliente(c, mesDashboard).reduce((a,p) => a + Number(p.valor || 0), 0), 0);
+    const aReceber = state.clientes.reduce((s, c) => {
+      const pacote = pacoteAtualCliente(c);
+      return s + (pacote && !pagamentoNoMesCliente(c, mesDashboard) ? Number(c.valorTotal || 0) : 0);
+    }, 0);
     const hojeStr = new Date().toLocaleDateString("pt-BR", { weekday: "long", day: "2-digit", month: "long" }).toUpperCase();
-    const pendentes = state.clientes.filter((c) => !c.pago).length;
+    const pendentes = state.clientes.filter((c) => !pagamentoNoMesCliente(c, mesDashboard)).length;
 
     let html = "";
 
@@ -861,6 +1546,7 @@
       html += '<button class="btn" id="btn-cancelar-reset">cancelar</button>';
     }
     html += '<button class="btn" id="btn-relatorio">Relatório</button>';
+    html += '<button class="btn" id="btn-ir-financeiro">Financeiro</button>';
     html += '<button class="btn" id="btn-backup" title="Baixa um arquivo .json com todos os seus dados">Backup</button>';
     html += '<label class="btn" style="cursor:pointer;" title="Restaura os dados a partir de um backup .json">Importar<input type="file" id="input-importar" accept="application/json" style="display:none;"></label>';
     html += '<button class="btn btn-dark" id="btn-novo-cliente">+ Novo cliente</button>';
@@ -893,23 +1579,8 @@
       '<button class="btn btn-dark" id="anotacao-add">+</button></div></div>';
     html += '</section>';
 
-    // Meta
-    html += '<section class="card meta-card"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">' +
-      '<span style="font-size:12px;font-weight:600;">Meta mensal</span>' +
-      '<button id="btn-editar-meta" style="background:transparent;border:none;font-size:10px;color:var(--cinza);cursor:pointer;font-weight:600;">editar meta (' + brl(state.meta) + ')</button></div>' +
-      '<div class="meta-bar-bg"><div class="meta-bar-fill' + (metaPct >= 100 ? " completo" : "") + '" style="width:' + metaPct + '%"></div></div>' +
-      '<div class="num" style="font-size:9.5px;color:var(--cinzaClaro);margin-top:7px;">' + brl(receitaMensal) + ' de ' + brl(state.meta) + ' · ' + metaPct + '%</div></section>';
-
-    // Custos mensais
-    html += '<section class="card custos-card"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">' +
-      '<div><h2 class="heading section-title">Custos mensais</h2><span style="font-size:9.5px;color:var(--cinzaClaro);">lucro líquido: <b class="num" style="color:' + (lucroLiquido >= 0 ? "var(--verde)" : "var(--vermelho)") + ';">' + brl(lucroLiquido) + '</b></span></div>' +
-      '<button class="btn btn-dark" id="btn-nova-despesa">+ Despesa</button></div>';
-    html += '<div class="custos-grid" style="margin-bottom:' + (state.despesas.length > 0 ? "14px" : "0") + ';">' +
-      '<div><div style="font-size:9px;color:var(--cinzaClaro);">RECEITA</div><strong class="num" style="font-size:15px;">' + brl(receitaMensal) + '</strong></div>' +
-      '<div><div style="font-size:9px;color:var(--cinzaClaro);">DESPESAS</div><strong class="num" style="font-size:15px;color:var(--vermelho);">' + brl(totalDespesas) + '</strong></div>' +
-      '<div><div style="font-size:9px;color:var(--cinzaClaro);">LÍQUIDO</div><strong class="num" style="font-size:15px;color:' + (lucroLiquido >= 0 ? "var(--verde)" : "var(--vermelho)") + ';">' + brl(lucroLiquido) + '</strong></div></div>';
-    html += renderDespesas();
-    html += '</section>';
+    // Financeiro
+    html += renderFinanceiro();
 
     // Atividade / Calendário / Pagamentos
     html += '<section class="middle-grid">';
@@ -953,11 +1624,26 @@
     on("#btn-confirmar-reset", "click", resetarTudo);
     on("#btn-cancelar-reset", "click", () => { state.confirmarReset = false; render(); });
     on("#btn-relatorio", "click", exportarRelatorio);
+    on("#btn-ir-financeiro", "click", () => document.getElementById("financeiro")?.scrollIntoView({ behavior: "smooth", block: "start" }));
+    on("#fin-add-aporte", "click", () => abrirModalAporteFinanceiro(state.financeiro.mesSelecionado || mesAtualFinanceiro(), null));
+    on("#fin-acao-aporte", "click", () => abrirModalAporteFinanceiro(state.financeiro.mesSelecionado || mesAtualFinanceiro(), null));
+    on("#fin-acao-despesa", "click", () => abrirModalDespesa(state.financeiro.mesSelecionado || mesAtualFinanceiro()));
+    on("#fin-empty-despesa", "click", () => abrirModalDespesa(state.financeiro.mesSelecionado || mesAtualFinanceiro()));
+    on("#fin-acao-receita", "click", () => abrirModalFinanceiroDetalhe("recebido", state.financeiro.mesSelecionado || mesAtualFinanceiro()));
+    on("#fin-ver-movimentos", "click", () => abrirModalFinanceiroDetalhe("movimentos", state.financeiro.mesSelecionado || mesAtualFinanceiro()));
+    on(".financeiro-summary-item", "click", (e) => abrirModalFinanceiroDetalhe(e.currentTarget.dataset.finDetail, state.financeiro.mesSelecionado || mesAtualFinanceiro()));
+    on("#fin-editar-meta", "click", abrirModalMetaReserva);
+    on("#fin-ver-despesas", "click", () => abrirModalFinanceiroDetalhe("despesas", state.financeiro.mesSelecionado || mesAtualFinanceiro()));
+    on("#fin-mes-ant", "click", () => { const base=state.financeiro.mesSelecionado || mesAtualFinanceiro(); const [a,m]=base.split("-").map(Number); const d=new Date(a,m-2,1); state.financeiro.mesSelecionado=chaveMesFinanceiro(d.getFullYear(),d.getMonth()); render(); });
+    on("#fin-mes-prox", "click", () => { const base=state.financeiro.mesSelecionado || mesAtualFinanceiro(); const [a,m]=base.split("-").map(Number); const d=new Date(a,m,1); state.financeiro.mesSelecionado=chaveMesFinanceiro(d.getFullYear(),d.getMonth()); render(); });
+    on("#fin-mes-hoje", "click", () => { state.financeiro.mesSelecionado = mesAtualFinanceiro(); render(); });
+    on(".acao-fin-mes", "click", (e) => abrirModalMesFinanceiro(e.currentTarget.dataset.chave));
     on("#btn-backup", "click", baixarBackup);
     on("#input-importar", "change", (e) => { if (e.target.files[0]) importarBackup(e.target.files[0]); });
     on("#btn-novo-cliente", "click", abrirModalNovoCliente);
     on("#btn-editar-meta", "click", abrirModalMeta);
-    on("#btn-nova-despesa", "click", abrirModalDespesa);
+    on("#btn-nova-despesa", "click", () => abrirModalDespesa(state.financeiro.mesSelecionado || mesAtualFinanceiro()));
+    on(".acao-editar-despesa", "click", (e) => abrirModalDespesa(null, e.currentTarget.dataset.id));
     on("#btn-ver-tudo-historico", "click", () => { state.verTudoHistorico = !state.verTudoHistorico; render(); });
 
     const addTarefaFn = () => {
@@ -1083,7 +1769,7 @@
   }
 
   function abrirModalMeta() {
-    abrirModal("Meta mensal",
+    abrirModal("Meta de receita",
       '<input class="input-field" id="meta-input" type="number" value="' + state.meta + '">' +
       '<button class="btn btn-dark" id="meta-salvar" style="margin-top:10px;width:100%;">salvar meta</button>',
       () => {
@@ -1096,23 +1782,63 @@
     );
   }
 
-  function abrirModalDespesa() {
-    abrirModal("Nova despesa",
+  function abrirModalDespesa(chaveMes, id) {
+    const itemReal = id ? state.despesas.find(d => d.id === id) : null;
+    const virtualFixa = id && id.startsWith('fixa-') ? (() => {
+      const partes = id.split('-');
+      const chave = partes.slice(-2).join('-');
+      const fixaId = partes.slice(0, -2).join('-');
+      return { fixa: despesaFixaDoId(fixaId), chave, fixaId };
+    })() : null;
+    const item = itemReal || (virtualFixa?.fixa ? { ...virtualFixa.fixa, fixaId: virtualFixa.fixaId, virtual: true } : null);
+    const chave = chaveMes || (itemReal?.quando ? chaveMesFinanceiro(new Date(itemReal.quando).getFullYear(), new Date(itemReal.quando).getMonth()) : (virtualFixa?.chave || mesAtualFinanceiro()));
+    const dataPadrao = itemReal?.quando ? new Date(itemReal.quando).toISOString().slice(0,10) : (item?.dia ? chave + '-' + String(Math.min(Number(item.dia), new Date(Number(chave.slice(0,4)), Number(chave.slice(5,7)), 0).getDate())).padStart(2,'0') : (chave === mesAtualFinanceiro() ? new Date().toISOString().slice(0,10) : chave + '-01'));
+    const fixaMarcada = !!item?.fixaId || !!item?.id && !!despesaFixaDoId(item.id);
+    abrirModal(item ? 'Editar despesa' : 'Nova despesa',
       '<div style="display:flex;flex-direction:column;gap:9px;">' +
-      '<input class="input-field" id="nd-nome" placeholder="nome da despesa (ex: internet, equipamento)">' +
+      '<input class="input-field" id="nd-nome" value="' + esc(item?.nome || '') + '" placeholder="nome da despesa (ex: internet, Adobe)">' +
       '<div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;">' +
-      '<input class="input-field" id="nd-valor" type="number" placeholder="valor">' +
-      '<input class="input-field" id="nd-categoria" placeholder="categoria (opcional)"></div>' +
-      '<button class="btn btn-dark" id="nd-salvar" style="margin-top:4px;">adicionar despesa</button></div>',
+      '<input class="input-field" id="nd-valor" type="number" step="0.01" value="' + (item?.valor ?? '') + '" placeholder="valor">' +
+      '<input class="input-field" id="nd-categoria" value="' + esc(item?.categoria || '') + '" placeholder="tipo (ex: software, fixo)"></div>' +
+      '<input class="input-field" id="nd-data" type="date" value="' + esc(dataPadrao) + '">' +
+      ((!item || (itemReal && !fixaMarcada)) ? '<label style="display:flex;align-items:center;gap:8px;font-size:9px;color:var(--cinza);cursor:pointer;"><input id="nd-fixa" type="checkbox" style="accent-color:var(--verde);"' + ((!item && false) || fixaMarcada ? ' checked' : '') + '> despesa fixa · repetir automaticamente todos os meses</label>' : (fixaMarcada ? '<div style="font-size:8.5px;color:var(--cinzaClaro);background:var(--inputBg);padding:9px 10px;border-radius:9px;">Despesa fixa. Alterar aqui atualiza os próximos meses; os lançamentos passados permanecem como estavam.</div>' : '')) +
+      '<button class="btn btn-dark" id="nd-salvar" style="margin-top:4px;">' + (item ? 'salvar alterações' : 'adicionar despesa') + '</button>' +
+      (itemReal ? '<button class="btn" id="nd-remover" style="color:var(--vermelho);">remover lançamento</button>' : '') +
+      (fixaMarcada && item?.fixaId ? '<button class="btn" id="nd-desativar-fixa" style="color:var(--vermelho);">desativar recorrência</button>' : '') +
+      '</div>',
       () => {
-        document.getElementById("nd-salvar").addEventListener("click", () => {
-          const nome = document.getElementById("nd-nome").value;
-          const valor = Number(document.getElementById("nd-valor").value);
-          const categoria = document.getElementById("nd-categoria").value;
-          if (!nome.trim() || !valor) return;
-          adicionarDespesa({ nome, valor, categoria });
+        document.getElementById('nd-salvar').addEventListener('click', () => {
+          const nome = document.getElementById('nd-nome').value;
+          const valor = Number(document.getElementById('nd-valor').value);
+          const categoria = document.getElementById('nd-categoria').value;
+          const quando = document.getElementById('nd-data').value;
+          if (!nome.trim() || !valor || !quando) return;
+          if (item?.fixaId) {
+            const dia = Number(quando.slice(-2)) || item.dia || 1;
+            editarDespesaFixa(item.fixaId, { nome, valor, categoria, dia, chave });
+          } else if (itemReal) {
+            const tornarFixa = document.getElementById('nd-fixa')?.checked;
+            if (tornarFixa) {
+              // Converte um lançamento existente em despesa fixa, preservando o registro atual.
+              const fixa = { id: 'fixa-' + uid(), nome: nome.trim(), valor: valor, categoria: categoria.trim() || 'Fixa', dia: Number(quando.slice(-2)) || 1, inicio: chaveMesDaDataISO(new Date(quando + 'T12:00:00').toISOString()), ativo: true };
+              state.financeiro.despesasFixas.push(fixa);
+              itemReal.fixaId = fixa.id;
+              itemReal.fixa = true;
+              itemReal.nome = fixa.nome; itemReal.valor = fixa.valor; itemReal.categoria = fixa.categoria; itemReal.quando = new Date(quando + 'T12:00:00').toISOString();
+              salvarFinanceiro(); salvar(K_DESPESAS, state.despesas);
+              toast('Despesa convertida em fixa · será repetida nos próximos meses', 'var(--vermelho)');
+              render();
+            } else {
+              editarDespesa(itemReal.id, { nome, valor, categoria, quando });
+            }
+          } else {
+            const fixa = document.getElementById('nd-fixa')?.checked;
+            adicionarDespesa({ nome, valor, categoria, quando, fixa });
+          }
           fecharModal();
         });
+        if (itemReal && document.getElementById('nd-remover')) document.getElementById('nd-remover').addEventListener('click', () => { removerDespesa(itemReal.id); fecharModal(); });
+        if (fixaMarcada && item?.fixaId && document.getElementById('nd-desativar-fixa')) document.getElementById('nd-desativar-fixa').addEventListener('click', () => { desativarDespesaFixa(item.fixaId); fecharModal(); });
       }
     );
   }
