@@ -93,17 +93,43 @@
 
   .middle-grid { display:grid; grid-template-columns:1.1fr 1fr 1fr; gap:11px; margin-bottom:12px; align-items:stretch; }
 
-  .activity-empty { display:flex; flex-direction:column; align-items:center; justify-content:center; height:190px; gap:8px; color:var(--cinzaClaro); }
-  .activity-stats { display:flex; gap:18px; margin-bottom:16px; }
-  .activity-chart { height:78px; display:flex; align-items:flex-end; gap:5px; position:relative; }
-  .activity-bar-wrap { flex:1; height:100%; display:flex; align-items:flex-end; position:relative; cursor:default; }
-  .activity-bar { width:100%; border-radius:5px; transition:height .4s cubic-bezier(.16,1,.3,1), background .2s; background:var(--divisor); }
-  .activity-bar.ativo { background:var(--destaque); }
-  .activity-tooltip { position:absolute; bottom:100%; left:50%; transform:translateX(-50%); margin-bottom:6px; background:var(--destaque); color:var(--destaqueTexto); font-size:9px; padding:3px 7px; border-radius:6px; white-space:nowrap; font-weight:600; display:none; }
-  .activity-bar-wrap:hover .activity-tooltip { display:block; }
-  .activity-bar-wrap:hover .activity-bar { background: var(--cinzaClaro); }
-  .activity-bar-wrap:hover .activity-bar.ativo { background: var(--destaque); }
-  .activity-axis { display:flex; justify-content:space-between; margin-top:9px; font-size:8.5px; color:var(--cinzaClaro); letter-spacing:.02em; }
+  /* Produção semanal compacta — 3 dias por vez */
+  .weekly-production { min-width:0; }
+  .weekly-production-head { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:10px; }
+  .weekly-production-summary { min-width:0; }
+  .weekly-production-count { font-size:9px; color:var(--cinzaClaro); }
+  .weekly-production-count strong { color:var(--texto); font-size:11px; }
+  .weekly-production-nav { display:flex; align-items:center; gap:3px; flex-shrink:0; }
+  .weekly-production-nav button { border:0; background:var(--inputBg); color:var(--texto); border-radius:8px; cursor:pointer; transition:transform .18s ease, background .18s ease, color .18s ease; }
+  .weekly-production-nav button:hover { background:var(--cardHover); transform:translateY(-1px); }
+  .weekly-production-nav .weekly-nav-arrow { width:26px; height:26px; font-size:13px; }
+  .weekly-production-nav .weekly-nav-today { height:26px; padding:0 8px; font-size:8px; color:var(--cinza); }
+  .weekly-production-range { min-width:100px; text-align:center; font-size:8.5px; font-weight:650; color:var(--cinza); text-transform:lowercase; }
+  .weekly-production-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:7px; }
+  .weekly-day { min-width:0; background:var(--inputBg); border-radius:12px; padding:9px 7px 7px; transition:transform .18s ease, background .18s ease; }
+  .weekly-day:hover { background:var(--cardHover); transform:translateY(-1px); }
+  .weekly-day.today { background:color-mix(in srgb,var(--destaque) 8%,var(--inputBg)); }
+  .weekly-day-head { display:flex; align-items:center; justify-content:space-between; gap:5px; margin-bottom:7px; padding:0 2px; }
+  .weekly-day-name { font-size:7.5px; color:var(--cinzaClaro); font-weight:700; text-transform:uppercase; letter-spacing:.06em; }
+  .weekly-day-date { min-width:21px; height:21px; border-radius:7px; display:grid; place-items:center; font-size:8.5px; font-weight:700; color:var(--cinza); }
+  .weekly-day-date.today { background:var(--destaque); color:var(--destaqueTexto); }
+  .weekly-day-tasks { display:flex; flex-direction:column; gap:4px; min-height:92px; max-height:154px; overflow:auto; padding-right:1px; }
+  .weekly-day-tasks::-webkit-scrollbar { width:3px; }
+  .weekly-day-tasks::-webkit-scrollbar-thumb { background:var(--divisor); border-radius:8px; }
+  .weekly-task { width:100%; display:flex; align-items:flex-start; gap:6px; padding:7px 6px; border:0; background:var(--card); color:var(--texto); border-radius:9px; text-align:left; cursor:pointer; box-shadow:var(--sombraCard); transition:transform .16s ease, background .16s ease, box-shadow .16s ease; }
+  .weekly-task:hover { background:var(--cardHover); transform:translateY(-1px); box-shadow:var(--sombraFlutuante); }
+  .weekly-task.done { opacity:.5; }
+  .weekly-task-check { width:14px; height:14px; border-radius:4px; border:1.5px solid var(--cinzaClaro); display:grid; place-items:center; flex:0 0 14px; margin-top:1px; background:transparent; padding:0; }
+  .weekly-task.done .weekly-task-check { background:var(--verde); border-color:var(--verde); color:#000; }
+  .weekly-task-check svg { width:8px; height:8px; }
+  .weekly-task-main { min-width:0; flex:1; }
+  .weekly-task-title { font-size:9.1px; line-height:1.3; font-weight:600; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+  .weekly-task.done .weekly-task-title { text-decoration:line-through; color:var(--cinzaClaro); }
+  .weekly-task-client { display:flex; align-items:center; gap:4px; margin-top:3px; font-size:7.4px; color:var(--cinzaClaro); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .weekly-task-client-dot { width:4px; height:4px; border-radius:50%; flex:0 0 4px; }
+  .weekly-day-empty { min-height:92px; display:flex; align-items:center; justify-content:center; text-align:center; color:var(--cinzaClaro); font-size:7.8px; padding:8px; }
+  .weekly-production-foot { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-top:7px; padding:0 2px; font-size:7.5px; color:var(--cinzaClaro); }
+  .weekly-production-foot strong { color:var(--texto); }
 
   .cal-weekdays, .cal-grid { display:grid; grid-template-columns:repeat(7,1fr); gap:3px; }
   .cal-weekdays { margin-bottom:6px; }
@@ -272,6 +298,49 @@
   @media(max-width:700px){.financeiro-actions{grid-template-columns:1fr}.financeiro-hero-top{flex-direction:column}.financeiro-mini-meta{text-align:left}.financeiro-mini-bar{margin-left:0}.financeiro-summary{grid-template-columns:1fr}.financeiro-summary-item{padding:9px 11px!important}.financeiro-column:last-child{display:flex}.financeiro-reserva{align-items:flex-start}}
   @media(max-width:560px){.financeiro-history{overflow:auto}.financeiro-history-header,.financeiro-history-row{min-width:520px}}
 
+\n  /* ---------- Financeiro — escala tipográfica alinhada ao restante do painel ---------- */
+  .financeiro-title{font-size:16px}
+  .financeiro-caption{font-size:11px}
+  .financeiro-month-name{font-size:11px}
+  .financeiro-nav-today{font-size:9.5px}
+  .financeiro-action{font-size:11px}
+  .financeiro-action strong{font-size:16px}
+  .financeiro-hero-label{font-size:9.5px}
+  .financeiro-hero-value{font-size:36px}
+  .financeiro-hero-note{font-size:9.5px}
+  .financeiro-formula-chip{font-size:8.5px;padding:6px 8px}
+  .financeiro-mini-meta-label{font-size:9px}
+  .financeiro-mini-meta-note{font-size:8.5px}
+  .financeiro-mini-meta-value{font-size:12px}
+  .financeiro-mini-edit{font-size:9px}
+  .financeiro-summary-label{font-size:9px}
+  .financeiro-summary-value{font-size:15px}
+  .financeiro-summary-note{font-size:8.5px}
+  .financeiro-panel-title{font-size:12px}
+  .financeiro-panel-sub{font-size:9.8px}
+  .financeiro-view-all,.financeiro-small-btn{font-size:9.5px}
+  .financeiro-add{font-size:18px}
+  .financeiro-item-nome{font-size:11px}
+  .financeiro-item-sub{font-size:9.5px}
+  .financeiro-item-value{font-size:11px}
+  .financeiro-empty{font-size:10.5px}
+  .financeiro-composicao-title,.financeiro-composicao-total{font-size:9.5px}
+  .financeiro-comp-leg{font-size:8.5px}
+  .financeiro-reserva-label{font-size:9px}
+  .financeiro-reserva-value{font-size:23px}
+  .financeiro-reserva-meta{font-size:9px}
+  .financeiro-reserva-edit{font-size:9px}
+  .financeiro-reserva-ring-pct{font-size:17px}
+  .financeiro-reserva-ring-label{font-size:8px}
+  .financeiro-meta-receita-label{font-size:9px}
+  .financeiro-meta-receita-value{font-size:16px}
+  .financeiro-meta-receita-foot{font-size:8.5px}
+  .financeiro-meta-receita-edit{font-size:9px}
+  .financeiro-history-title{font-size:12px}
+  .financeiro-history-sub{font-size:9px}
+  .financeiro-history-header{font-size:8.5px}
+  .financeiro-history-month{font-size:9.5px}
+  .financeiro-history-value{font-size:9px}
 
 </style>
 </head>
@@ -320,6 +389,7 @@
     notaHoverId: null,
     calMes: new Date().getMonth(),
     calAno: new Date().getFullYear(),
+    producaoSemanaOffset: 0,
   };
 
   // Migração: clientes salvos antes do sistema de cores e do histórico por pacote/pagamento.
@@ -1276,33 +1346,88 @@
   }
 
   function renderAtividade() {
-    const hist = state.historico;
-    const dias = [];
-    for (let i = 13; i >= 0; i--) { const d = new Date(); d.setDate(d.getDate() - i); dias.push(d); }
-    const contagem = dias.map((d) => {
-      const chave = d.toDateString();
-      return hist.filter((ev) => ev.tipo === "entrega" && new Date(ev.quando).toDateString() === chave).reduce((s, ev) => s + Math.max(ev.quantidade, 0), 0);
+    const hoje = new Date();
+    hoje.setHours(0,0,0,0);
+
+    const semanaOffset = Number(state.producaoSemanaOffset || 0);
+    const janelaOffset = Number(state.producaoJanelaOffset || 0);
+    const baseSemana = new Date(hoje);
+    const diaSemana = baseSemana.getDay();
+    const distanciaSegunda = diaSemana === 0 ? -6 : 1 - diaSemana;
+    baseSemana.setDate(baseSemana.getDate() + distanciaSegunda + (semanaOffset * 7));
+
+    const nomesDias = ["Segunda","Terça","Quarta","Quinta","Sexta","Sábado","Domingo"];
+    const inicioIndice = Math.max(0, Math.min(6, janelaOffset));
+    const diasVisiveis = Math.min(3, 7 - inicioIndice);
+    const tarefasPorDia = Array.from({length: diasVisiveis}, () => []);
+
+    state.tarefas.forEach((t) => {
+      if (!t.prazo) return;
+      const d = new Date(t.prazo);
+      if (Number.isNaN(d.getTime())) return;
+      d.setHours(0,0,0,0);
+      const indiceSemana = Math.round((d - baseSemana) / 86400000);
+      if (indiceSemana >= inicioIndice && indiceSemana < inicioIndice + diasVisiveis) {
+        tarefasPorDia[indiceSemana - inicioIndice].push(t);
+      }
     });
-    const totalPeriodo = contagem.reduce((a, b) => a + b, 0);
-    if (totalPeriodo === 0) {
-      return '<div class="activity-empty"><div style="display:flex;gap:4px;">' +
-        [0, 1, 2].map(() => '<span style="width:6px;height:6px;border-radius:50%;background:var(--cinzaClaro);"></span>').join("") +
-        '</div><span style="font-size:11.5px;text-align:center;">Sem vídeos registrados<br>nos últimos 14 dias</span></div>';
+
+    tarefasPorDia.forEach((lista) => lista.sort((a,b) => {
+      if (a.concluida !== b.concluida) return a.concluida ? 1 : -1;
+      return new Date(a.prazo) - new Date(b.prazo);
+    }));
+
+    const todas = tarefasPorDia.flat();
+    const concluidas = todas.filter((t) => t.concluida).length;
+    const primeira = new Date(baseSemana);
+    primeira.setDate(primeira.getDate() + inicioIndice);
+    const ultima = new Date(primeira);
+    ultima.setDate(ultima.getDate() + diasVisiveis - 1);
+
+    const inicioLabel = primeira.toLocaleDateString("pt-BR", {day:"2-digit", month:"short"}).replace(".", "");
+    const fimLabel = ultima.toLocaleDateString("pt-BR", {day:"2-digit", month:"short"}).replace(".", "");
+
+    let html = '<div class="weekly-production">';
+    html += '<div class="weekly-production-head">';
+    html += '<div class="weekly-production-summary"><span class="weekly-production-count"><strong>' + todas.length + '</strong> tarefa' + (todas.length !== 1 ? "s" : "") + ' nestes dias' + (concluidas ? ' · <strong>' + concluidas + '</strong> concluída' + (concluidas !== 1 ? 's' : '') : '') + '</span></div>';
+    html += '<div class="weekly-production-nav">';
+    html += '<button class="weekly-nav-arrow" id="producao-semana-ant" aria-label="Dias anteriores">‹</button>';
+    html += '<span class="weekly-production-range">' + inicioLabel + ' — ' + fimLabel + '</span>';
+    html += '<button class="weekly-nav-arrow" id="producao-semana-prox" aria-label="Próximos dias">›</button>';
+    html += '<button class="weekly-nav-today" id="producao-semana-hoje">hoje</button>';
+    html += '</div></div>';
+
+    html += '<div class="weekly-production-grid">';
+    for (let i = 0; i < diasVisiveis; i++) {
+      const dia = new Date(baseSemana);
+      dia.setDate(dia.getDate() + inicioIndice + i);
+      const ehHoje = dia.getTime() === hoje.getTime();
+      const lista = tarefasPorDia[i];
+      html += '<div class="weekly-day' + (ehHoje ? ' today' : '') + '">';
+      html += '<div class="weekly-day-head"><span class="weekly-day-name">' + nomesDias[inicioIndice + i] + '</span><span class="weekly-day-date' + (ehHoje ? ' today' : '') + '">' + dia.getDate() + '</span></div>';
+      html += '<div class="weekly-day-tasks">';
+      if (!lista.length) {
+        html += '<div class="weekly-day-empty">sem tarefas</div>';
+      } else {
+        lista.forEach((t) => {
+          const cliente = t.clienteId ? encontrarCliente(t.clienteId) : null;
+          const corCliente = cliente ? (cliente.cor || "var(--cinzaClaro)") : "var(--cinzaClaro)";
+          html += '<div class="weekly-task acao-semana-tarefa' + (t.concluida ? ' done' : '') + '" data-id="' + esc(t.id) + '" title="Abrir tarefa">';
+          html += '<button class="weekly-task-check acao-semana-check" data-id="' + esc(t.id) + '" title="Marcar como concluída">' + (t.concluida ? iconeCheck() : '') + '</button>';
+          html += '<div class="weekly-task-main">';
+          html += '<div class="weekly-task-title">' + esc(t.texto) + '</div>';
+          if (cliente) html += '<div class="weekly-task-client"><span class="weekly-task-client-dot" style="background:' + corCliente + '"></span>' + esc(cliente.nome) + '</div>';
+          html += '</div></div>';
+        });
+      }
+      html += '</div></div>';
     }
-    const hoje7 = contagem.slice(-7).reduce((a, b) => a + b, 0);
-    let streak = 0;
-    for (let i = contagem.length - 1; i >= 0; i--) { if (contagem[i] > 0) streak++; else break; }
-    const max = Math.max(...contagem, 1);
-    let html = '<div class="activity-stats">';
-    html += '<div><strong class="num" style="display:block;font-size:20px;">' + hoje7 + '</strong><span style="font-size:9px;color:var(--cinzaClaro);">últimos 7 dias</span></div>';
-    html += '<div><strong class="num" style="display:block;font-size:20px;">' + streak + '</strong><span style="font-size:9px;color:var(--cinzaClaro);">dia' + (streak !== 1 ? "s" : "") + ' seguido' + (streak !== 1 ? "s" : "") + '</span></div>';
-    html += '</div><div class="activity-chart">';
-    contagem.forEach((v, i) => {
-      const ativo = i === contagem.length - 1;
-      const altura = Math.max((v / max) * 100, 6);
-      html += '<div class="activity-bar-wrap"><div class="activity-tooltip">' + v + " vídeo" + (v !== 1 ? "s" : "") + '</div><div class="activity-bar' + (ativo ? " ativo" : "") + '" style="height:' + altura + '%"></div></div>';
-    });
-    html += '</div><div class="activity-axis"><span>' + dias[0].toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" }) + '</span><span style="color:var(--texto);font-weight:600;">HOJE</span></div>';
+    html += '</div>';
+
+    const temAnterior = inicioIndice > 0 || semanaOffset !== 0;
+    const temProximo = inicioIndice + diasVisiveis < 7 || true;
+    html += '<div class="weekly-production-foot"><span>' + (inicioIndice > 0 ? 'Outros dias nesta semana nas setas.' : '3 dias por vez para manter o painel compacto.') + '</span><span><strong>' + (todas.length - concluidas) + '</strong> em aberto</span></div>';
+    html += '</div>';
     return html;
   }
 
@@ -1584,7 +1709,7 @@
 
     // Atividade / Calendário / Pagamentos
     html += '<section class="middle-grid">';
-    html += '<div class="card"><div style="display:flex;justify-content:space-between;margin-bottom:14px;"><h2 class="heading section-title">Atividade</h2><span class="section-sub">14 DIAS</span></div>' + renderAtividade() + '</div>';
+    html += '<div class="card"><div style="display:flex;justify-content:space-between;margin-bottom:14px;"><h2 class="heading section-title">Produção da semana</h2><span class="section-sub">TAREFAS</span></div>' + renderAtividade() + '</div>';
     html += '<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;"><h2 class="heading section-title">Calendário</h2>' +
       '<div style="display:flex;align-items:center;gap:6px;">' +
       '<button class="btn-icon" id="cal-mes-anterior" style="width:22px;height:22px;font-size:11px;">‹</button>' +
@@ -1670,6 +1795,29 @@
 
     on("#cal-mes-anterior", "click", () => { state.calMes--; if (state.calMes < 0) { state.calMes = 11; state.calAno--; } render(); });
     on("#cal-mes-proximo", "click", () => { state.calMes++; if (state.calMes > 11) { state.calMes = 0; state.calAno++; } render(); });
+    on("#producao-semana-ant", "click", () => {
+      let janela = Number(state.producaoJanelaOffset || 0);
+      let semana = Number(state.producaoSemanaOffset || 0);
+      if (janela === 4) janela = 3;
+      else if (janela === 3) janela = 0;
+      else { janela = 4; semana -= 1; }
+      state.producaoJanelaOffset = janela;
+      state.producaoSemanaOffset = semana;
+      render();
+    });
+    on("#producao-semana-prox", "click", () => {
+      let janela = Number(state.producaoJanelaOffset || 0);
+      let semana = Number(state.producaoSemanaOffset || 0);
+      if (janela === 0) janela = 3;
+      else if (janela === 3) janela = 4;
+      else { janela = 0; semana += 1; }
+      state.producaoJanelaOffset = janela;
+      state.producaoSemanaOffset = semana;
+      render();
+    });
+    on("#producao-semana-hoje", "click", () => { state.producaoSemanaOffset = 0; state.producaoJanelaOffset = 0; render(); });
+    on(".acao-semana-check", "click", (e) => { e.stopPropagation(); alternarTarefa(e.currentTarget.dataset.id); });
+    on(".acao-semana-tarefa", "click", (e) => { if (e.target.closest(".acao-semana-check")) return; abrirModalEditarTarefa(e.currentTarget.dataset.id); });
 
     on(".acao-entrega", "click", (e) => registrarEntrega(e.currentTarget.dataset.id, Number(e.currentTarget.dataset.delta)));
     on(".acao-novo-pacote", "click", (e) => iniciarNovoPacote(e.currentTarget.dataset.id));
