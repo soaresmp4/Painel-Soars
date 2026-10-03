@@ -60,6 +60,86 @@
   h1.greeting { margin:0; font-size:26px; font-weight:700; letter-spacing:-.03em; }
   .header-actions { display:flex; gap:7px; align-items:center; flex-wrap:wrap; }
 
+  /* ---------- Foto de topo ---------- */
+  .site-top-photo {
+    width:100%;
+    height:260px;
+    margin:0 0 22px;
+    border-radius:20px;
+    overflow:hidden;
+    position:relative;
+    background:var(--inputBg);
+    box-shadow:var(--sombraCard);
+  }
+  .site-top-photo img {
+    display:block;
+    width:100%;
+    height:100%;
+    object-fit:cover;
+    object-position:center;
+    transition:transform .45s cubic-bezier(.16,1,.3,1), filter .3s ease;
+  }
+  .site-top-photo:hover img {
+    transform:scale(1.012);
+  }
+  .site-top-photo-picker {
+    position:absolute;
+    inset:0;
+    z-index:2;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    cursor:pointer;
+    background:rgba(0,0,0,0);
+    transition:background .25s ease;
+  }
+  .site-top-photo-picker:hover {
+    background:rgba(0,0,0,.16);
+  }
+  .site-top-photo-picker-text {
+    display:inline-flex;
+    align-items:center;
+    gap:7px;
+    padding:9px 13px;
+    border-radius:11px;
+    background:rgba(0,0,0,.58);
+    color:#fff;
+    font-size:11px;
+    font-weight:600;
+    letter-spacing:-.01em;
+    opacity:0;
+    transform:translateY(4px);
+    transition:opacity .2s ease, transform .2s ease;
+    backdrop-filter:blur(10px);
+    -webkit-backdrop-filter:blur(10px);
+  }
+  .site-top-photo-picker:hover .site-top-photo-picker-text,
+  .site-top-photo.is-empty .site-top-photo-picker-text {
+    opacity:1;
+    transform:none;
+  }
+  .site-top-photo-picker input { display:none; }
+  .site-top-photo-fallback {
+    position:absolute;
+    inset:0;
+    z-index:1;
+    display:grid;
+    place-items:center;
+    padding:20px;
+    text-align:center;
+    color:var(--cinzaClaro);
+    font-size:10px;
+    background:var(--inputBg);
+    pointer-events:none;
+  }
+  .site-top-photo:not(.is-empty) .site-top-photo-fallback { display:none; }
+  .site-top-photo.is-empty {
+    border:1px dashed var(--borda);
+  }
+  @media (max-width:700px) {
+    .site-top-photo { height:180px; border-radius:16px; margin-bottom:18px; }
+  }
+
   .kpi-grid { display:grid; grid-template-columns:1.15fr 1fr 1fr 1fr; gap:11px; margin-bottom:22px; }
   .kpi { border-radius:18px; padding:17px 18px; box-shadow:var(--sombraCard); }
   .kpi-label { font-size:9.5px; letter-spacing:.04em; display:flex; align-items:center; gap:5px; }
@@ -155,10 +235,14 @@
   .status-pill { padding:3px 9px; border-radius:99px; background:var(--inputBg); font-weight:600; }
   .completo-banner { margin-top:14px; background: color-mix(in srgb, var(--verde) 12%, transparent); border-radius:12px; padding:11px 13px; display:flex; align-items:center; justify-content:space-between; gap:8px; }
 
-  .modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.5); backdrop-filter:blur(10px); display:flex; align-items:center; justify-content:center; z-index:100; }
-  .modal-box { background:var(--card); border-radius:18px; padding:22px; width:340px; max-width:90%; box-shadow:var(--sombraFlutuante); }
-  .modal-head { display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; }
+  .modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.5); backdrop-filter:blur(10px); display:flex; align-items:center; justify-content:center; z-index:100; padding:20px; overflow:auto; }
+  .modal-box { background:var(--card); border-radius:18px; padding:22px; width:340px; max-width:90vw; max-height:calc(100vh - 40px); box-shadow:var(--sombraFlutuante); display:flex; flex-direction:column; overflow:hidden; }
+  .modal-head { display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; flex:0 0 auto; }
+  #modal-body { min-height:0; overflow-y:auto; overscroll-behavior:contain; padding-right:3px; scrollbar-width:thin; }
+  #modal-body::-webkit-scrollbar { width:6px; }
+  #modal-body::-webkit-scrollbar-thumb { background:var(--divisor); border-radius:99px; }
   .modal-close { background:transparent; border:none; color:var(--cinza); font-size:15px; cursor:pointer; }
+  @media(max-width:560px){ .modal-overlay{padding:12px;} .modal-box{width:100%;max-width:100%;max-height:calc(100vh - 24px);padding:18px;} }
 
   .toast-host { position:fixed; bottom:18px; right:18px; display:flex; flex-direction:column; gap:8px; z-index:200; pointer-events:none; }
   .toast { background:var(--card); border-radius:12px; padding:11px 15px; font-size:12px; color:var(--texto); box-shadow:var(--sombraFlutuante); display:flex; align-items:center; gap:8px; min-width:190px; animation:slideIn .25s ease; }
@@ -363,6 +447,7 @@
   const K_TAREFAS = "soars-tarefas-v1";
   const K_ANOTACOES = "soars-anotacoes-v1";
   const K_FINANCEIRO = "soars-financeiro-v1";
+  const K_FOTO_TOPO = "soars-foto-topo-v1";
 
   const PALETA_CORES_CLIENTE = ["#BF5AF2", "#FF375F", "#FFD60A"];
 
@@ -381,6 +466,7 @@
     anotacoes: lerJSON(K_ANOTACOES, []),
     meta: Number(localStorage.getItem(K_META)) || 5000,
     financeiro: lerJSON(K_FINANCEIRO, { metaReserva: 10000, saldoInicial: 0, meses: [], mesSelecionado: null }),
+    fotoTopo: localStorage.getItem(K_FOTO_TOPO) || "",
     tema: localStorage.getItem(K_TEMA) || "escuro",
     ultimoSalvo: new Date().toISOString(),
     verTudoHistorico: false,
@@ -1350,6 +1436,7 @@
         if (dados.despesas) { state.despesas = dados.despesas; salvar(K_DESPESAS, state.despesas); }
         if (dados.tarefas) { state.tarefas = dados.tarefas; salvar(K_TAREFAS, state.tarefas); }
         if (dados.anotacoes) { state.anotacoes = dados.anotacoes; salvar(K_ANOTACOES, state.anotacoes); }
+        if (typeof dados.fotoTopo === "string") { state.fotoTopo = dados.fotoTopo; salvar(K_FOTO_TOPO, state.fotoTopo); }
         garantirEstruturaClientes();
         if (dados.financeiro) { state.financeiro = dados.financeiro; garantirFinanceiro(); salvarFinanceiro(); }
         if (typeof dados.meta === "number") { state.meta = dados.meta; salvar(K_META, String(dados.meta)); }
@@ -1379,6 +1466,58 @@
     state.historico.slice(0, 30).forEach((ev) => { txt += "- " + fmtDataHora(ev.quando) + " · " + ev.clienteNome + " · " + ev.tipo + (ev.quantidade ? " (" + (ev.quantidade > 0 ? "+" : "") + ev.quantidade + ")" : "") + "\n"; });
     baixarArquivo("relatorio-soars-" + hoje.replace(/\//g, "-") + ".txt", txt, "text/plain;charset=utf-8");
     toast("Relatório exportado", "var(--texto)");
+  }
+
+  // ---------- Foto de topo ----------
+  function processarFotoTopo(arquivo) {
+    if (!arquivo || !arquivo.type || !arquivo.type.startsWith("image/")) {
+      toast("Escolha uma imagem", "var(--vermelho)");
+      return;
+    }
+
+    const leitor = new FileReader();
+    leitor.onload = (ev) => {
+      const img = new Image();
+      img.onload = () => {
+        try {
+          const maxLado = 1800;
+          const escala = Math.min(1, maxLado / Math.max(img.naturalWidth || img.width, img.naturalHeight || img.height));
+          const largura = Math.max(1, Math.round((img.naturalWidth || img.width) * escala));
+          const altura = Math.max(1, Math.round((img.naturalHeight || img.height) * escala));
+          const canvas = document.createElement("canvas");
+          canvas.width = largura;
+          canvas.height = altura;
+          const ctx = canvas.getContext("2d");
+          if (!ctx) throw new Error("canvas indisponível");
+          ctx.drawImage(img, 0, 0, largura, altura);
+
+          let dataURL = canvas.toDataURL("image/webp", 0.82);
+          if (!dataURL.startsWith("data:image/webp")) dataURL = canvas.toDataURL("image/jpeg", 0.82);
+
+          const ok = salvar(K_FOTO_TOPO, dataURL);
+          if (!ok) {
+            toast("A foto é grande demais para o armazenamento do navegador", "var(--vermelho)");
+            return;
+          }
+          state.fotoTopo = dataURL;
+          toast("Foto adicionada", "var(--verde)");
+          render();
+        } catch (e) {
+          toast("Não foi possível preparar a foto", "var(--vermelho)");
+        }
+      };
+      img.onerror = () => toast("Imagem inválida", "var(--vermelho)");
+      img.src = ev.target.result;
+    };
+    leitor.onerror = () => toast("Não foi possível ler a foto", "var(--vermelho)");
+    leitor.readAsDataURL(arquivo);
+  }
+
+  function removerFotoTopo() {
+    state.fotoTopo = "";
+    localStorage.removeItem(K_FOTO_TOPO);
+    toast("Foto removida", "var(--texto)");
+    render();
   }
 
   // ---------- Renderização ----------
@@ -1721,6 +1860,18 @@
     html += '<button class="btn btn-dark" id="btn-novo-cliente">+ Novo cliente</button>';
     html += '</div></header>';
 
+    // Foto de topo — clique para escolher uma imagem direto pelo site
+    const fotoTopoSrc = state.fotoTopo || "foto-topo.jpg";
+    const fotoTemFonte = !!state.fotoTopo;
+    html += '<div class="site-top-photo' + (fotoTemFonte ? '' : ' is-empty') + '" id="site-top-photo">' +
+      '<img src="' + esc(fotoTopoSrc) + '" alt="Imagem de destaque" loading="eager" onerror="this.style.display=\'none\';this.parentElement.classList.add(\'is-empty\');">' +
+      '<label class="site-top-photo-picker" title="Escolher ou trocar foto">' +
+      '<span class="site-top-photo-picker-text">' + (fotoTemFonte ? 'trocar foto' : 'escolher foto') + '</span>' +
+      '<input type="file" id="input-foto-topo" accept="image/*">' +
+      '</label>' +
+      '<div class="site-top-photo-fallback">clique para escolher uma foto para o topo</div>' +
+      '</div>';
+
     // KPIs
     html += '<section class="kpi-grid">';
     html += '<div class="kpi kpi-destaque"><div class="kpi-label">RECEITA MENSAL</div><strong class="num kpi-value">' + brl(receitaMensal) + '</strong><span class="kpi-sub">' + state.clientes.length + ' contrato' + (state.clientes.length !== 1 ? "s" : "") + ' ativo' + (state.clientes.length !== 1 ? "s" : "") + '</span></div>';
@@ -1809,6 +1960,7 @@
     on(".acao-fin-mes", "click", (e) => abrirModalMesFinanceiro(e.currentTarget.dataset.chave));
     on("#btn-backup", "click", baixarBackup);
     on("#input-importar", "change", (e) => { if (e.target.files[0]) importarBackup(e.target.files[0]); });
+    on("#input-foto-topo", "change", (e) => { if (e.target.files[0]) processarFotoTopo(e.target.files[0]); });
     on("#btn-novo-cliente", "click", abrirModalNovoCliente);
     on("#btn-editar-meta", "click", abrirModalMeta);
     on("#btn-nova-despesa", "click", () => abrirModalDespesa(state.financeiro.mesSelecionado || mesAtualFinanceiro()));
