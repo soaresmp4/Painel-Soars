@@ -322,6 +322,15 @@
   .financeiro-item-sub{font-size:7.5px;color:var(--cinzaClaro);margin-top:3px}
   .financeiro-item-value{font-size:9.5px;white-space:nowrap}
   .financeiro-empty{padding:18px 6px;color:var(--cinzaClaro);font-size:8.5px;text-align:center}
+  .financeiro-despesas-grupo{margin-top:12px}
+  .financeiro-despesas-grupo:first-child{margin-top:0}
+  .financeiro-despesas-grupo-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:0 7px 7px}
+  .financeiro-despesas-grupo-titulo{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--texto)}
+  .financeiro-despesas-grupo-total{font-size:9px;color:var(--cinza);white-space:nowrap}
+  .financeiro-despesas-grupo-lista{display:flex;flex-direction:column;gap:2px}
+  .financeiro-despesas-total-final{border-top:1px solid var(--borda);margin-top:14px;padding:12px 7px 2px;display:flex;justify-content:space-between;align-items:center;gap:10px}
+  .financeiro-despesas-total-final span{font-size:10px;font-weight:650}
+  .financeiro-despesas-total-final strong{font-size:11px;color:var(--vermelho)}
 
   .financeiro-composicao{margin-top:14px;padding-top:13px;border-top:1px solid var(--divisor)}
   .financeiro-composicao-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px}
@@ -1288,6 +1297,33 @@
       () => document.getElementById("fin-meta-receita-local-salvar").addEventListener("click", () => { salvarMeta(Math.max(0, Number(document.getElementById("fin-meta-receita-local").value) || 0)); fecharModal(); })
     );
   }
+  function renderGrupoDespesasFinanceiro(titulo, itens, total) {
+    return '<section class="financeiro-despesas-grupo">' +
+      '<div class="financeiro-despesas-grupo-head">' +
+        '<span class="financeiro-despesas-grupo-titulo">' + esc(titulo) + '</span>' +
+        '<strong class="num financeiro-despesas-grupo-total">' + brl(total) + '</strong>' +
+      '</div>' +
+      '<div class="financeiro-despesas-grupo-lista">' +
+        (itens.length ? itens.map(d =>
+          '<div class="financeiro-item acao-editar-despesa" data-id="' + esc(d.id) + '" data-fixa-id="' + esc(d.fixaId || '') + '" data-virtual="' + (d.virtual ? '1' : '0') + '">' +
+            '<span class="financeiro-item-dot" style="background:var(--vermelho)"></span>' +
+            '<div class="financeiro-item-info">' +
+              '<div class="financeiro-item-nome">' + esc(d.nome) + '</div>' +
+              '<div class="financeiro-item-sub">' +
+                esc(d.categoria || "Outros") +
+                (d.virtual ? ' · prevista' : '') +
+                (d.formaPagamento === 'cartao'
+                  ? ' · cartão · compra ' + new Date(dataCompraDaDespesa(d)).toLocaleDateString('pt-BR') + ' · paga ' + new Date(dataPagamentoDaDespesa(d)).toLocaleDateString('pt-BR')
+                  : ' · paga ' + new Date(dataPagamentoDaDespesa(d)).toLocaleDateString('pt-BR')) +
+              '</div>' +
+            '</div>' +
+            '<strong class="num financeiro-item-value" style="color:var(--vermelho)">− ' + brl(d.valor) + '</strong>' +
+          '</div>'
+        ).join('') : '<div class="financeiro-empty">Nenhuma despesa nesta categoria.</div>') +
+      '</div>' +
+    '</section>';
+  }
+
   function abrirModalFinanceiroDetalhe(tipo, chave) {
     const t = dadosFinanceirosMes(chave);
     const recebimentos = [];
@@ -1295,12 +1331,39 @@
     const despesas = despesasDoMesFinanceiro(chave);
     const aportes = aportesDoMes(chave);
     let titulo = "Detalhes · " + nomeMesChave(chave), corpo = '';
+
     if (tipo === "recebido") {
       titulo = "Recebimentos · " + nomeMesChave(chave);
-      corpo = '<div style="display:flex;flex-direction:column;gap:4px;">' + (recebimentos.length ? recebimentos.map(r => '<div class="financeiro-item"><span class="financeiro-item-dot" style="background:var(--verde)"></span><div class="financeiro-item-info"><div class="financeiro-item-nome">' + esc(r.cliente.nome) + '</div><div class="financeiro-item-sub">Recebido em ' + new Date(r.pagamento.data).toLocaleDateString('pt-BR') + '</div></div><strong class="num financeiro-item-value" style="color:var(--verde)">+ ' + brl(r.pagamento.valor) + '</strong></div>').join('') : '<div class="financeiro-empty">Nenhum recebimento neste mês.</div>') + '</div>';
+      corpo = '<div style="display:flex;flex-direction:column;gap:4px;">' +
+        (recebimentos.length ? recebimentos.map(r =>
+          '<div class="financeiro-item">' +
+            '<span class="financeiro-item-dot" style="background:var(--verde)"></span>' +
+            '<div class="financeiro-item-info">' +
+              '<div class="financeiro-item-nome">' + esc(r.cliente.nome) + '</div>' +
+              '<div class="financeiro-item-sub">Recebido em ' + new Date(r.pagamento.data).toLocaleDateString('pt-BR') + '</div>' +
+            '</div>' +
+            '<strong class="num financeiro-item-value" style="color:var(--verde)">+ ' + brl(r.pagamento.valor) + '</strong>' +
+          '</div>'
+        ).join('') : '<div class="financeiro-empty">Nenhum recebimento neste mês.</div>') +
+      '</div>';
     } else if (tipo === "despesas") {
       titulo = "Despesas · " + nomeMesChave(chave);
-      corpo = '<div style="display:flex;flex-direction:column;gap:4px;">' + (despesas.length ? despesas.map(d => '<div class="financeiro-item acao-editar-despesa" data-id="' + esc(d.id) + '" data-fixa-id="' + esc(d.fixaId || '') + '" data-virtual="' + (d.virtual ? '1' : '0') + '"><span class="financeiro-item-dot" style="background:var(--vermelho)"></span><div class="financeiro-item-info"><div class="financeiro-item-nome">' + esc(d.nome) + '</div><div class="financeiro-item-sub">' + esc(d.categoria || "Outros") + (d.virtual ? ' · fixa · prevista' : d.fixa ? ' · fixa' : '') + (d.formaPagamento === 'cartao' ? ' · cartão · compra ' + new Date(dataCompraDaDespesa(d)).toLocaleDateString('pt-BR') + ' · paga ' + new Date(dataPagamentoDaDespesa(d)).toLocaleDateString('pt-BR') : ' · paga ' + new Date(dataPagamentoDaDespesa(d)).toLocaleDateString('pt-BR')) + '</div></div><strong class="num financeiro-item-value" style="color:var(--vermelho)">− ' + brl(d.valor) + '</strong></div>').join('') : '<div class="financeiro-empty">Nenhuma despesa neste mês.</div>') + '<div style="border-top:1px solid var(--borda);margin-top:8px;padding-top:10px;display:flex;justify-content:space-between;font-size:10px;"><span>Total</span><b class="num" style="color:var(--vermelho)">' + brl(t.despesas) + '</b></div></div>';
+
+      const despesasFixas = despesas.filter(d => Boolean(d.fixa || d.virtual || d.fixaId));
+      const despesasVariaveis = despesas.filter(d => !Boolean(d.fixa || d.virtual || d.fixaId));
+      const totalFixas = despesasFixas.reduce((s, d) => s + Number(d.valor || 0), 0);
+      const totalVariaveis = despesasVariaveis.reduce((s, d) => s + Number(d.valor || 0), 0);
+      const totalCompleto = totalFixas + totalVariaveis;
+
+      corpo =
+        '<div>' +
+          renderGrupoDespesasFinanceiro('Despesas fixas', despesasFixas, totalFixas) +
+          renderGrupoDespesasFinanceiro('Despesas variáveis', despesasVariaveis, totalVariaveis) +
+          '<div class="financeiro-despesas-total-final">' +
+            '<span>Total de todas as despesas</span>' +
+            '<strong class="num">− ' + brl(totalCompleto) + '</strong>' +
+          '</div>' +
+        '</div>';
     } else if (tipo === "liquido") {
       titulo = "Resumo · " + nomeMesChave(chave);
       corpo = '<div style="display:flex;flex-direction:column;gap:8px;"><div class="financeiro-item"><span>Recebido</span><b class="num" style="color:var(--verde)">' + brl(t.recebido) + '</b></div><div class="financeiro-item"><span>Despesas</span><b class="num" style="color:var(--vermelho)">− ' + brl(t.despesas) + '</b></div><div class="financeiro-item" style="background:var(--inputBg)"><span><b>Valor líquido</b></span><b class="num">' + brl(t.liquido) + '</b></div></div>';
@@ -1309,8 +1372,11 @@
       const mov = [...recebimentos.map(r=>({nome:r.cliente.nome,detalhe:'Recebimento',valor:r.pagamento.valor,data:r.pagamento.data,cor:'var(--verde)'})), ...despesas.map(d=>({nome:d.nome,detalhe:d.categoria||'Despesa',valor:d.valor,data:dataPagamentoDaDespesa(d),cor:'var(--vermelho)'})), ...aportes.map(a=>({nome:a.nome,detalhe:'Aporte',valor:a.valor,data:a.data,cor:'var(--azul)'}))].sort((a,b)=>new Date(b.data||0)-new Date(a.data||0));
       corpo = '<div style="display:flex;flex-direction:column;gap:3px;">' + (mov.length ? mov.map(x=>'<div class="financeiro-item"><span class="financeiro-item-dot" style="background:' + x.cor + '"></span><div class="financeiro-item-info"><div class="financeiro-item-nome">' + esc(x.nome) + '</div><div class="financeiro-item-sub">' + esc(x.detalhe) + ' · ' + new Date(x.data).toLocaleDateString('pt-BR') + '</div></div><strong class="num financeiro-item-value" style="color:' + x.cor + '">' + (x.cor==='var(--verde)'?'+ ':'− ') + brl(x.valor) + '</strong></div>').join('') : '<div class="financeiro-empty">Nenhuma movimentação neste mês.</div>') + '</div>';
     }
+
     abrirModal(titulo, corpo, () => {
-      document.querySelectorAll('#modal-body .acao-editar-despesa').forEach(el => el.addEventListener('click', () => { abrirModalDespesa(null, el.dataset.id); }));
+      document.querySelectorAll('#modal-body .acao-editar-despesa').forEach(el => el.addEventListener('click', () => {
+        abrirModalDespesa(null, el.dataset.id);
+      }));
     });
   }
 
