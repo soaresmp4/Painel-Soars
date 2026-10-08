@@ -712,8 +712,24 @@
     state.historico = state.historico.slice(0, 1000);
     salvar(K_HISTORICO, state.historico);
   }
-  function registrarConclusao(cliente) {
-    state.conclusoes.unshift({ id: uid(), clienteNome: cliente.nome, quantidade: cliente.totalVideos, valor: cliente.valorTotal, quando: new Date().toISOString() });
+  function registrarConclusao(cliente, pacote, statusManual) {
+    const p = pacote || pacoteAtualCliente(cliente);
+    if (!p) return;
+    const quantidade = Math.max(0, Number(p.entregues) || 0);
+    const total = Math.max(0, Number(p.totalVideos) || Number(cliente.totalVideos) || 0);
+    const incompleto = quantidade < total;
+    state.conclusoes.unshift({
+      id: uid(),
+      clienteNome: cliente.nome,
+      quantidade,
+      totalVideos: total,
+      valor: Number(p.valorTotal) || Number(cliente.valorTotal) || 0,
+      status: incompleto ? "incompleto" : (statusManual || "completo"),
+      pacoteId: p.id,
+      inicio: p.inicio || null,
+      fim: p.fim || new Date().toISOString(),
+      quando: new Date().toISOString()
+    });
     state.conclusoes = state.conclusoes.slice(0, 500);
     salvar(K_CONCLUSOES, state.conclusoes);
   }
@@ -745,6 +761,11 @@
 
   function registrarEntrega(id, delta) {
     const c = encontrarCliente(id); if (!c) return;
+    const pacoteStatus = pacoteAtualCliente(c);
+    if (pacoteStatus && pacoteStatus.status === "concluido") {
+      toast("Este pacote já foi concluído. Inicie um novo pacote para registrar vídeos.", "var(--laranja)");
+      return;
+    }
     const novoValor = Math.max(0, Math.min(c.totalVideos, c.entregues + delta));
     const realDelta = novoValor - c.entregues;
     if (realDelta === 0) return;
@@ -763,7 +784,7 @@
       const pacoteAtual = pacoteAtualCliente(c);
       if (pacoteAtual) { pacoteAtual.status = "concluido"; pacoteAtual.fim = new Date().toISOString(); }
       toast("🎉 " + c.nome + ": pacote completo!", "var(--verde)");
-      registrarConclusao(c);
+      registrarConclusao(c, pacoteAtual, "completo");
     }
     render();
   }
@@ -781,6 +802,38 @@
     const lista = pagamentosDoCliente(cliente).filter(p => p.pacoteId === pacote.id).sort((a,b) => new Date(a.data) - new Date(b.data));
     return lista.length ? lista[lista.length - 1] : null;
   }
+  function concluirPacote(id) {
+    const c = encontrarCliente(id); if (!c) return;
+    const pacote = pacoteAtualCliente(c); if (!pacote) return;
+    if (pacote.status === "concluido") return;
+
+    const agora = new Date().toISOString();
+    pacote.fim = agora;
+    pacote.status = "concluido";
+    pacote.totalVideos = Number(c.totalVideos) || pacote.totalVideos || 0;
+    pacote.entregues = Math.max(0, Number(c.entregues) || 0);
+    pacote.valorTotal = Number(c.valorTotal) || pacote.valorTotal || 0;
+
+    salvarClientes();
+    registrarConclusao(c, pacote, pacote.entregues >= pacote.totalVideos ? "completo" : "incompleto");
+    registrarEvento({
+      tipo: "pacote-concluido",
+      clienteNome: c.nome,
+      quantidade: pacote.entregues,
+      totalVideos: pacote.totalVideos,
+      valor: pacote.valorTotal,
+      pacoteId: pacote.id,
+      incompleto: pacote.entregues < pacote.totalVideos
+    });
+
+    if (pacote.entregues >= pacote.totalVideos) {
+      toast("🎉 " + c.nome + ": pacote concluído", "var(--verde)");
+    } else {
+      toast(c.nome + ": pacote encerrado com " + pacote.entregues + "/" + pacote.totalVideos + " vídeos", "var(--laranja)");
+    }
+    render();
+  }
+
   function iniciarNovoPacote(id) {
     const c = encontrarCliente(id); if (!c) return;
     const atual = pacoteAtualCliente(c);
@@ -1743,8 +1796,12 @@
   }
 
   function renderClienteCard(c) {
+    const pacoteAtual = pacoteAtualCliente(c);
     const pct = Math.round((c.entregues / c.totalVideos) * 100) || 0;
-    const completo = c.entregues >= c.totalVideos;
+    const completoPorQuantidade = c.entregues >= c.totalVideos;
+    const pacoteConcluido = !!(pacoteAtual && pacoteAtual.status === "concluido");
+    const completo = completoPorQuantidade || pacoteConcluido;
+    const incompleto = pacoteConcluido && !completoPorQuantidade;
     const valorUnidade = c.valorTotal / c.totalVideos;
     const status = statusPagamento(c);
     let html = '<article class="card client-card" data-client-id="' + esc(c.id) + '">';
@@ -1767,12 +1824,16 @@
       '<span>' + pct + '% concluído</span><span class="status-pill" style="color:' + status.cor + ';">' + status.texto + '</span></div>';
 
     if (completo) {
-      html += '<div class="completo-banner"><span style="font-size:11px;color:var(--verde);font-weight:600;">🎉 pacote concluído</span>' +
+      const corConclusao = incompleto ? "var(--laranja)" : "var(--verde)";
+      const textoConclusao = incompleto ? ("pacote encerrado · " + c.entregues + "/" + c.totalVideos + " vídeos") : "🎉 pacote concluído";
+      html += '<div class="completo-banner" style="background:color-mix(in srgb,' + corConclusao + ' 12%,transparent);">' +
+        '<span style="font-size:11px;color:' + corConclusao + ';font-weight:600;">' + textoConclusao + '</span>' +
         '<button class="btn btn-dark acao-novo-pacote" data-id="' + esc(c.id) + '" style="height:30px;font-size:10.5px;">iniciar novo pacote</button></div>';
     } else {
       html += '<div style="display:flex;gap:6px;margin-top:14px;">' +
         '<button class="btn acao-entrega" data-id="' + esc(c.id) + '" data-delta="-1">−</button>' +
-        '<button class="btn btn-dark acao-entrega" data-id="' + esc(c.id) + '" data-delta="1" style="flex:1;">Registrar vídeo</button></div>';
+        '<button class="btn btn-dark acao-entrega" data-id="' + esc(c.id) + '" data-delta="1" style="flex:1;">Registrar vídeo</button></div>' +
+        '<button class="btn acao-concluir-pacote" data-id="' + esc(c.id) + '" style="width:100%;margin-top:7px;height:31px;color:var(--laranja);">concluir pacote</button>';
     }
     html += '<div style="display:flex;gap:6px;margin-top:8px;"><button class="btn acao-pagamento" data-id="' + esc(c.id) + '" style="flex:1;color:' + (c.pago ? "var(--verde)" : "var(--cinza)") + ';">' + (c.pago ? "recebido ✓" : "marcar pago") + '</button></div>';
 
@@ -1801,13 +1862,14 @@
     return grupos.map((g) => {
       let html = '<div style="margin-bottom:18px;"><div class="hist-group-label">' + esc(g.label) + '</div>';
       g.itens.forEach((ev) => {
-        const cor = ev.tipo === "pagamento" ? "var(--verde)" : (ev.tipo === "pagamento-desfeito" || ev.tipo === "remocao") ? "var(--vermelho)" : (ev.tipo === "novo-cliente" || ev.tipo === "novo-pacote") ? "var(--laranja)" : ev.quantidade > 0 ? "var(--texto)" : "var(--laranja)";
+        const cor = ev.tipo === "pagamento" ? "var(--verde)" : (ev.tipo === "pagamento-desfeito" || ev.tipo === "remocao") ? "var(--vermelho)" : (ev.tipo === "novo-cliente" || ev.tipo === "novo-pacote") ? "var(--laranja)" : ev.tipo === "pacote-concluido" ? (ev.incompleto ? "var(--laranja)" : "var(--verde)") : ev.quantidade > 0 ? "var(--texto)" : "var(--laranja)";
         let desc = "";
         if (ev.tipo === "entrega") desc = " · " + (ev.quantidade > 0 ? "+" : "") + ev.quantidade + " vídeo (total " + ev.totalApos + ")";
         else if (ev.tipo === "pagamento") desc = " · pagamento recebido (" + brl(ev.valor) + ")";
         else if (ev.tipo === "pagamento-desfeito") desc = " · pagamento desmarcado";
         else if (ev.tipo === "novo-cliente") desc = " · cliente adicionado";
         else if (ev.tipo === "novo-pacote") desc = " · novo pacote iniciado (" + ev.quantidade + " vídeos)";
+        else if (ev.tipo === "pacote-concluido") desc = ev.incompleto ? " · pacote encerrado incompleto (" + ev.quantidade + "/" + ev.totalVideos + " vídeos)" : " · pacote concluído (" + ev.quantidade + "/" + ev.totalVideos + " vídeos)";
         else if (ev.tipo === "remocao") desc = " · cliente removido";
         else if (ev.tipo === "edicao") desc = " · " + esc(ev.detalhe);
 
@@ -1828,13 +1890,17 @@
   }
 
   function renderConclusoes() {
-    if (state.conclusoes.length === 0) return '<div style="font-size:11px;color:var(--cinzaClaro);">nenhum pacote concluído ainda — quando um cliente bater 100% de entregas, ele aparece aqui.</div>';
+    if (state.conclusoes.length === 0) return '<div style="font-size:11px;color:var(--cinzaClaro);">nenhum pacote concluído ainda.</div>';
     const lista = state.conclusoes.slice(0, state.verTudoConclusoes ? state.conclusoes.length : 6);
-    return lista.map((cn) =>
-      '<div class="conclusao-row"><span style="display:flex;gap:8px;align-items:center;"><span class="dot" style="width:7px;height:7px;background:var(--verde);"></span><b>' + esc(cn.clienteNome) + '</b> · pacote de ' + cn.quantidade + ' vídeos concluído</span>' +
-      '<span style="display:flex;align-items:center;gap:10px;"><span class="num" style="font-weight:600;color:var(--verde);">' + brl(cn.valor) + '</span>' +
-      '<span class="num" style="color:var(--cinzaClaro);font-size:10px;">' + fmtDataHora(cn.quando) + '</span></span></div>'
-    ).join("");
+    return lista.map((cn) => {
+      const total = Number(cn.totalVideos) || Number(cn.quantidade) || 0;
+      const incompleto = cn.status === "incompleto" || (Number(cn.quantidade) || 0) < total;
+      const cor = incompleto ? "var(--laranja)" : "var(--verde)";
+      const texto = incompleto ? (cn.quantidade + "/" + total + " vídeos · pacote incompleto") : (cn.quantidade + " vídeos · pacote concluído");
+      return '<div class="conclusao-row" style="background:color-mix(in srgb,' + cor + ' 12%,transparent);"><span style="display:flex;gap:8px;align-items:center;min-width:0;"><span class="dot" style="width:7px;height:7px;background:' + cor + ';"></span><b>' + esc(cn.clienteNome) + '</b> · ' + texto + '</span>' +
+        '<span style="display:flex;align-items:center;gap:10px;flex-shrink:0;"><span class="num" style="font-weight:600;color:' + cor + ';">' + brl(cn.valor) + '</span>' +
+        '<span class="num" style="color:var(--cinzaClaro);font-size:10px;">' + fmtDataHora(cn.quando) + '</span></span></div>';
+    }).join("");
   }
 
   function renderContadorTarefas() {
@@ -2091,6 +2157,7 @@
     on(".acao-semana-tarefa", "click", (e) => { if (e.target.closest(".acao-semana-check")) return; abrirModalEditarTarefa(e.currentTarget.dataset.id); });
 
     on(".acao-entrega", "click", (e) => registrarEntrega(e.currentTarget.dataset.id, Number(e.currentTarget.dataset.delta)));
+    on(".acao-concluir-pacote", "click", (e) => concluirPacote(e.currentTarget.dataset.id));
     on(".acao-novo-pacote", "click", (e) => iniciarNovoPacote(e.currentTarget.dataset.id));
     on(".acao-pagamento", "click", (e) => registrarPagamento(e.currentTarget.dataset.id));
     on(".acao-editar-cliente", "click", (e) => abrirModalEditarCliente(e.currentTarget.dataset.id));
