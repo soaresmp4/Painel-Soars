@@ -357,7 +357,7 @@
   .financeiro-reserva-label{font-size:7.5px;color:var(--cinzaClaro);display:block;margin-bottom:4px}
   .financeiro-reserva-value{font-size:21px;letter-spacing:-.045em;display:block}
   .financeiro-reserva-meta{display:flex;justify-content:space-between;gap:10px;margin-top:5px;font-size:7.5px;color:var(--cinzaClaro)}
-  .financeiro-reserva-actions{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:12px;flex-wrap:wrap}
+  .financeiro-reserva-actions{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:12px}
   .financeiro-reserva-edit{border:0;background:transparent;color:var(--cinza);font-size:7.5px;cursor:pointer;padding:0}
   .financeiro-reserva-edit:hover{color:var(--texto)}
 
@@ -952,8 +952,6 @@
       if (!f.diaCompra) { f.diaCompra = Number(f.dia) || 1; mudou = true; }
       if (!f.diaPagamento) { f.diaPagamento = Number(f.dia) || f.diaCompra || 1; mudou = true; }
       if (!f.formaPagamento) { f.formaPagamento = 'conta'; mudou = true; }
-      if (!Array.isArray(f.mesesIgnorados)) { f.mesesIgnorados = []; mudou = true; }
-      if (!Array.isArray(f.pagaMeses)) { f.pagaMeses = []; mudou = true; }
     });
     if (mudou) { salvar(K_DESPESAS, state.despesas); salvarFinanceiro(); }
   }
@@ -980,20 +978,14 @@
   function despesasDoMesFinanceiro(chave) {
     const reais = state.despesas
       .filter(d => pertenceAoMesFinanceiro(dataPagamentoDaDespesa(d), chave))
-      .map(d => {
-        const fixa = d.fixaId ? state.financeiro.despesasFixas.find(f => f.id === d.fixaId) : null;
-        return { ...d, origem: 'registro', fixa: Boolean(d.fixa || d.fixaId), paga: Boolean(fixa && Array.isArray(fixa.pagaMeses) && fixa.pagaMeses.includes(chave)) };
-      });
+      .map(d => ({ ...d, origem: 'registro' }));
 
     garantirFinanceiro();
     const idsComRegistro = new Set(reais.filter(d => d.fixaId).map(d => d.fixaId));
     const virtuais = [];
     state.financeiro.despesasFixas.forEach(f => {
-      // Mantém o histórico virtual até o mês de encerramento da recorrência.
-      if (!f.ativo && !f.fim) return;
-      if (f.fim && String(chave).localeCompare(String(f.fim)) > 0) return;
+      if (!f.ativo) return;
       if (!mesIgualOuDepois(chave, f.inicio)) return;
-      if (Array.isArray(f.mesesIgnorados) && f.mesesIgnorados.includes(chave)) return;
       if (idsComRegistro.has(f.id)) return;
       const dataPagamento = dataFixaPagamentoNoMes(f, chave);
       const dataCompra = dataFixaCompraParaPagamento(f, chave);
@@ -1008,7 +1000,6 @@
         dataPagamento,
         formaPagamento: f.formaPagamento || 'conta',
         fixa: true,
-        paga: Array.isArray(f.pagaMeses) && f.pagaMeses.includes(chave),
         virtual: true,
         origem: 'recorrente'
       });
@@ -1097,57 +1088,20 @@
   }
   function removerDespesa(id) {
     const d = state.despesas.find(x => x.id === id);
-    if (d && d.fixaId) {
-      // Uma exceção impede que o lançamento removido volte a aparecer como recorrência virtual.
-      const fixa = despesaFixaDoId(d.fixaId);
-      const chave = chaveMesDaDataISO(dataPagamentoDaDespesa(d));
-      if (fixa && chave) {
-        fixa.mesesIgnorados = Array.isArray(fixa.mesesIgnorados) ? fixa.mesesIgnorados : [];
-        if (!fixa.mesesIgnorados.includes(chave)) fixa.mesesIgnorados.push(chave);
-        fixa.pagaMeses = (fixa.pagaMeses || []).filter(m => m !== chave);
-        salvarFinanceiro();
-      }
-    }
     state.despesas = state.despesas.filter(x => x.id !== id);
     salvar(K_DESPESAS, state.despesas);
-    if (d && d.fixaId) toast('Lançamento removido deste mês · recorrência mantida', 'var(--texto)');
-    render();
-  }
-  function removerDespesaFixaMes(fixaId, chave) {
-    const fixa = despesaFixaDoId(fixaId);
-    if (!fixa || !chave) return;
-    fixa.mesesIgnorados = Array.isArray(fixa.mesesIgnorados) ? fixa.mesesIgnorados : [];
-    if (!fixa.mesesIgnorados.includes(chave)) fixa.mesesIgnorados.push(chave);
-    fixa.pagaMeses = (fixa.pagaMeses || []).filter(m => m !== chave);
-    state.despesas = state.despesas.filter(d => !(d.fixaId === fixaId && pertenceAoMesFinanceiro(dataPagamentoDaDespesa(d), chave)));
-    salvarFinanceiro(); salvar(K_DESPESAS, state.despesas);
-    toast('Despesa retirada deste mês · recorrência mantida', 'var(--texto)');
-    render();
-  }
-  function alternarDespesaFixaPaga(fixaId, chave) {
-    const fixa = despesaFixaDoId(fixaId);
-    if (!fixa || !chave) return;
-    fixa.pagaMeses = Array.isArray(fixa.pagaMeses) ? fixa.pagaMeses : [];
-    if (fixa.pagaMeses.includes(chave)) {
-      fixa.pagaMeses = fixa.pagaMeses.filter(m => m !== chave);
-      toast('Status de pagamento removido', 'var(--texto)');
-    } else {
-      fixa.pagaMeses.push(chave);
-      toast('Despesa marcada como paga neste mês', 'var(--verde)');
+    if (d && d.fixaId) {
+      // Remove só este lançamento. A recorrência continua ativa.
+      toast('Lançamento do mês removido · a despesa fixa continua ativa', 'var(--texto)');
     }
-    salvarFinanceiro();
     render();
   }
-  function desativarDespesaFixa(fixaId, fimChave) {
+  function desativarDespesaFixa(fixaId) {
     const fixa = despesaFixaDoId(fixaId);
     if (!fixa) return;
-    // Se o usuário está consultando um mês passado, não apaga previsões históricas.
-    const mesAtual = mesAtualFinanceiro();
-    const fim = fimChave && String(fimChave).localeCompare(mesAtual) > 0 ? fimChave : mesAtual;
     fixa.ativo = false;
-    fixa.fim = fim;
     salvarFinanceiro();
-    toast('Recorrência encerrada após ' + nomeMesChave(fim), 'var(--texto)');
+    toast('Despesa fixa desativada', 'var(--texto)');
     render();
   }
 
@@ -1236,10 +1190,7 @@
     if (!Array.isArray(state.financeiro.despesasFixas)) state.financeiro.despesasFixas = [];
     if (!Number.isFinite(Number(state.financeiro.metaReserva)) || Number(state.financeiro.metaReserva) <= 0) state.financeiro.metaReserva = 10000;
     if (!Number.isFinite(Number(state.financeiro.saldoInicial))) state.financeiro.saldoInicial = 0;
-    state.financeiro.meses.forEach(m => {
-      m.aportes = Array.isArray(m.aportes) ? m.aportes : [];
-      m.resgates = Array.isArray(m.resgates) ? m.resgates : [];
-    });
+    state.financeiro.meses.forEach(m => { m.aportes = Array.isArray(m.aportes) ? m.aportes : []; });
   }
   garantirFinanceiro();
   function salvarFinanceiro() { salvar(K_FINANCEIRO, state.financeiro); }
@@ -1250,15 +1201,12 @@
     let m = state.financeiro.meses.find(x => x.chave === chave);
     if (!m && criar) {
       const [ano, mes] = chave.split("-").map(Number);
-      m = { chave, ano, mes, fechado: false, aportes: [], resgates: [] };
+      m = { chave, ano, mes, fechado: false, aportes: [] };
       state.financeiro.meses.push(m);
       state.financeiro.meses.sort((a,b) => a.chave.localeCompare(b.chave));
       salvarFinanceiro();
     }
-    if (m) {
-      m.aportes = Array.isArray(m.aportes) ? m.aportes : [];
-      m.resgates = Array.isArray(m.resgates) ? m.resgates : [];
-    }
+    if (m) m.aportes = Array.isArray(m.aportes) ? m.aportes : [];
     return m;
   }
   function nomeMesChave(chave) {
@@ -1299,45 +1247,22 @@
     const m = obterMesFinanceiro(chave, false);
     return m ? m.aportes : [];
   }
-  function resgatesDoMes(chave) {
-    const m = obterMesFinanceiro(chave, false);
-    return m ? m.resgates : [];
-  }
   function dadosFinanceirosMes(chave) {
     const recebido = state.clientes.reduce((s,c) => s + pagamentosDoMesCliente(c, chave).reduce((a,p) => a + Number(p.valor || 0), 0), 0);
     const despesas = despesasDoMesFinanceiro(chave).reduce((s,d) => s + Number(d.valor || 0), 0);
     const aportes = aportesDoMes(chave).reduce((s,a) => s + Number(a.valor || 0), 0);
-    const retiradas = resgatesDoMes(chave).reduce((s,r) => s + Number(r.valor || 0), 0);
-    return { recebido, despesas, aportes, retiradas, liquido: recebido - despesas, disponivel: recebido - despesas - aportes + retiradas };
+    return { recebido, despesas, aportes, liquido: recebido - despesas, disponivel: recebido - despesas - aportes };
   }
   function mesesComMovimentacaoFinanceira() {
     const set = new Set();
     state.clientes.forEach(c => { todosPagamentosCliente(c).forEach(p => { const dt = new Date(p.data); if (!Number.isNaN(dt.getTime())) set.add(chaveMesFinanceiro(dt.getFullYear(), dt.getMonth())); }); });
     state.despesas.forEach(d => { const dt = new Date(dataPagamentoDaDespesa(d)); if (!Number.isNaN(dt.getTime())) set.add(chaveMesFinanceiro(dt.getFullYear(), dt.getMonth())); });
-    state.financeiro.meses.forEach(m => { if ((m.aportes && m.aportes.length) || (m.resgates && m.resgates.length)) set.add(m.chave); });
+    state.financeiro.meses.forEach(m => { if (m.aportes && m.aportes.length) set.add(m.chave); });
     return [...set].sort((a,b) => b.localeCompare(a));
   }
   function totalReserva() {
     garantirFinanceiro();
-    const aportado = state.financeiro.meses.reduce((s,m) => s + (m.aportes || []).reduce((a,x) => a + Number(x.valor || 0), 0), 0);
-    const resgatado = state.financeiro.meses.reduce((s,m) => s + (m.resgates || []).reduce((a,x) => a + Number(x.valor || 0), 0), 0);
-    return Math.max(0, Number(state.financeiro.saldoInicial || 0) + aportado - resgatado);
-  }
-  function saldoReservaNaData(dataISO, ignorarResgateId) {
-    garantirFinanceiro();
-    const limite = String(dataISO || '9999-12-31');
-    let saldo = Number(state.financeiro.saldoInicial || 0);
-    state.financeiro.meses.forEach(m => {
-      (m.aportes || []).forEach(a => {
-        const data = String(a.data || (m.chave + '-01'));
-        if (data <= limite) saldo += Number(a.valor || 0);
-      });
-      (m.resgates || []).forEach(r => {
-        const data = String(r.data || (m.chave + '-01'));
-        if (r.id !== ignorarResgateId && data <= limite) saldo -= Number(r.valor || 0);
-      });
-    });
-    return Math.max(0, saldo);
+    return Number(state.financeiro.saldoInicial || 0) + state.financeiro.meses.reduce((s,m) => s + (m.aportes || []).reduce((a,x) => a + Number(x.valor || 0), 0), 0);
   }
   function salvarAporteFinanceiro(chave, dados, id) {
     const m = obterMesFinanceiro(chave, true);
@@ -1355,7 +1280,7 @@
     const m = obterMesFinanceiro(chave, false);
     if (!m) return;
     m.aportes = m.aportes.filter(x => x.id !== id);
-    if (!m.aportes.length && !(m.resgates || []).length && !m.fechado) state.financeiro.meses = state.financeiro.meses.filter(x => x.chave !== chave);
+    if (!m.aportes.length && !m.fechado) state.financeiro.meses = state.financeiro.meses.filter(x => x.chave !== chave);
     salvarFinanceiro();
     render();
   }
@@ -1391,81 +1316,6 @@
       }
     );
   }
-  function salvarResgateFinanceiro(chave, dados, id) {
-    const data = dados.data || (chave + '-01');
-    const valor = Number(dados.valor) || 0;
-    const saldoPossivel = saldoReservaNaData(data, id || null);
-    if (valor <= 0) { toast('Informe um valor maior que zero', 'var(--vermelho)'); return false; }
-    if (valor > saldoPossivel + 0.000001) { toast('O resgate não pode ser maior que a reserva disponível (' + brl(saldoPossivel) + ')', 'var(--vermelho)'); return false; }
-    const m = obterMesFinanceiro(chave, true);
-    if (id) {
-      const item = m.resgates.find(x => x.id === id);
-      if (item) Object.assign(item, dados, { valor, data });
-    } else {
-      m.resgates.unshift({ id: uid(), ...dados, valor, data, criadoEm: new Date().toISOString() });
-    }
-    salvarFinanceiro();
-    toast(id ? 'Resgate atualizado' : 'Retirada registrada', 'var(--azul)');
-    render();
-    return true;
-  }
-  function removerResgateFinanceiro(chave, id) {
-    const m = obterMesFinanceiro(chave, false);
-    if (!m) return;
-    m.resgates = m.resgates.filter(x => x.id !== id);
-    if (!(m.aportes || []).length && !m.resgates.length && !m.fechado) state.financeiro.meses = state.financeiro.meses.filter(x => x.chave !== chave);
-    salvarFinanceiro();
-    toast('Retirada desfeita · valor devolvido à reserva', 'var(--verde)');
-    render();
-  }
-  function abrirModalResgateFinanceiro(chave, id) {
-    const m = obterMesFinanceiro(chave, false);
-    const item = id && m ? m.resgates.find(x => x.id === id) : null;
-    const dataHoje = new Date().toISOString().slice(0, 10);
-    const dataPadrao = chave === mesAtualFinanceiro() ? dataHoje : (chave + '-01');
-    abrirModal(item ? 'Editar retirada da reserva' : 'Retirar dinheiro da reserva',
-      '<div style="display:flex;flex-direction:column;gap:9px;">' +
-      '<div style="font-size:9px;color:var(--cinzaClaro);">Saldo atual da reserva: <b class="num" style="color:var(--texto)">' + brl(totalReserva()) + '</b>. A retirada reduz o acumulado e volta a compor o disponível do mês.</div>' +
-      '<input class="input-field" id="fin-resgate-nome" value="' + esc(item?.nome || 'Retirada da reserva') + '" placeholder="motivo da retirada">' +
-      '<input class="input-field" id="fin-resgate-valor" type="number" min="0.01" step="0.01" value="' + (item?.valor ?? '') + '" placeholder="valor que retirou">' +
-      '<input class="input-field" id="fin-resgate-data" type="date" value="' + esc(item?.data || dataPadrao) + '">' +
-      '<textarea class="input-field" id="fin-resgate-obs" style="resize:vertical;min-height:55px;" placeholder="observação (opcional)">' + esc(item?.obs || '') + '</textarea>' +
-      '<div style="display:flex;gap:8px;margin-top:3px;"><button class="btn btn-dark" id="fin-resgate-salvar" style="flex:1;">salvar retirada</button>' +
-      (item ? '<button class="btn" id="fin-resgate-remover" style="color:var(--vermelho);">desfazer</button>' : '') + '</div></div>',
-      () => {
-        document.getElementById('fin-resgate-salvar').addEventListener('click', () => {
-          const nome = document.getElementById('fin-resgate-nome').value.trim();
-          const valor = Number(document.getElementById('fin-resgate-valor').value);
-          const data = document.getElementById('fin-resgate-data').value;
-          if (!nome || !valor || !data) return toast('Preencha motivo, valor e data', 'var(--vermelho)');
-          const chaveData = chaveMesDaDataISO(new Date(data + 'T12:00:00').toISOString());
-          if (!chaveData) return toast('Data inválida', 'var(--vermelho)');
-          // Se a data foi corrigida para outro mês, transfere a movimentação para o mês correspondente.
-          if (id && chaveData !== chave) {
-            const saldoPossivel = saldoReservaNaData(data, id);
-            if (valor > saldoPossivel + 0.000001) return toast('O resgate excede o saldo disponível na data escolhida (' + brl(saldoPossivel) + ')', 'var(--vermelho)');
-            const antigo = obterMesFinanceiro(chave, false);
-            const registro = antigo?.resgates.find(x => x.id === id);
-            if (!registro) return toast('Não encontrei essa retirada para editar', 'var(--vermelho)');
-            antigo.resgates = antigo.resgates.filter(x => x.id !== id);
-            const novoMes = obterMesFinanceiro(chaveData, true);
-            novoMes.resgates.unshift({ ...registro, nome, valor, data, obs: document.getElementById('fin-resgate-obs').value.trim() });
-            salvarFinanceiro();
-            if (antigo && !(antigo.aportes || []).length && !(antigo.resgates || []).length && !antigo.fechado) state.financeiro.meses = state.financeiro.meses.filter(x => x.chave !== chave);
-            salvarFinanceiro();
-            toast('Resgate atualizado', 'var(--azul)');
-            render();
-          } else {
-            const salvo = salvarResgateFinanceiro(chaveData, { nome, valor, data, obs: document.getElementById('fin-resgate-obs').value.trim() }, id);
-            if (!salvo) return;
-          }
-          fecharModal(); render();
-        });
-        if (item) document.getElementById('fin-resgate-remover').addEventListener('click', () => { removerResgateFinanceiro(chave, id); fecharModal(); });
-      }
-    );
-  }
-
   function abrirModalMetaReserva() {
     abrirModal("Reserva de emergência",
       '<div style="display:flex;flex-direction:column;gap:9px;">' +
@@ -1481,14 +1331,13 @@
     );
   }
   function abrirModalMesFinanceiro(chave) {
-    const t = dadosFinanceirosMes(chave), aportes = aportesDoMes(chave), retiradas = resgatesDoMes(chave), m = obterMesFinanceiro(chave, false);
+    const t = dadosFinanceirosMes(chave), aportes = aportesDoMes(chave), m = obterMesFinanceiro(chave, false);
     abrirModal("Resumo de " + nomeMesChave(chave),
       '<div style="display:flex;flex-direction:column;gap:8px;">' +
       '<div class="financeiro-item"><span>Recebido</span><b class="num" style="color:var(--verde)">' + brl(t.recebido) + '</b></div>' +
       '<div class="financeiro-item"><span>Despesas</span><b class="num" style="color:var(--vermelho)">' + brl(t.despesas) + '</b></div>' +
       '<div class="financeiro-item"><span>Valor líquido</span><b class="num">' + brl(t.liquido) + '</b></div>' +
       '<div class="financeiro-item"><span>Guardado</span><b class="num" style="color:var(--azul)">' + brl(t.aportes) + '</b></div>' +
-      '<div class="financeiro-item"><span>Retirado da reserva</span><b class="num" style="color:var(--azul)">' + brl(t.retiradas) + '</b></div>' +
       '<div class="financeiro-item"><span>Disponível</span><b class="num" style="color:' + (t.disponivel >= 0 ? 'var(--texto)' : 'var(--vermelho)') + '">' + brl(t.disponivel) + '</b></div>' +
       (m ? '<button class="btn" id="fin-check" style="margin-top:4px;">' + (m.fechado ? '✓ mês conferido' : 'marcar mês como conferido') + '</button>' : '') +
       '</div>',
@@ -1515,8 +1364,7 @@
               '<div class="financeiro-item-nome">' + esc(d.nome) + '</div>' +
               '<div class="financeiro-item-sub">' +
                 esc(d.categoria || "Outros") +
-                (d.virtual ? (d.paga ? ' · recorrente' : ' · prevista') : '') +
-                (d.paga ? ' · paga ✓' : '') +
+                (d.virtual ? ' · prevista' : '') +
                 (d.formaPagamento === 'cartao'
                   ? ' · cartão · compra ' + new Date(dataCompraDaDespesa(d)).toLocaleDateString('pt-BR') + ' · paga ' + new Date(dataPagamentoDaDespesa(d)).toLocaleDateString('pt-BR')
                   : ' · paga ' + new Date(dataPagamentoDaDespesa(d)).toLocaleDateString('pt-BR')) +
@@ -1535,7 +1383,6 @@
     state.clientes.forEach(c => { pagamentosDoMesCliente(c, chave).forEach(p => recebimentos.push({ cliente: c, pagamento: p })); });
     const despesas = despesasDoMesFinanceiro(chave);
     const aportes = aportesDoMes(chave);
-    const retiradas = resgatesDoMes(chave);
     let titulo = "Detalhes · " + nomeMesChave(chave), corpo = '';
 
     if (tipo === "recebido") {
@@ -1575,21 +1422,13 @@
       corpo = '<div style="display:flex;flex-direction:column;gap:8px;"><div class="financeiro-item"><span>Recebido</span><b class="num" style="color:var(--verde)">' + brl(t.recebido) + '</b></div><div class="financeiro-item"><span>Despesas</span><b class="num" style="color:var(--vermelho)">− ' + brl(t.despesas) + '</b></div><div class="financeiro-item" style="background:var(--inputBg)"><span><b>Valor líquido</b></span><b class="num">' + brl(t.liquido) + '</b></div></div>';
     } else {
       titulo = "Movimentações · " + nomeMesChave(chave);
-      const mov = [
-        ...recebimentos.map(r=>({nome:r.cliente.nome,detalhe:'Recebimento',valor:r.pagamento.valor,data:r.pagamento.data,cor:'var(--verde)'})),
-        ...despesas.map(d=>({nome:d.nome,detalhe:d.categoria||'Despesa',valor:d.valor,data:dataPagamentoDaDespesa(d),cor:'var(--vermelho)'})),
-        ...aportes.map(a=>({nome:a.nome,detalhe:'Dinheiro guardado',valor:a.valor,data:a.data,cor:'var(--azul)'})),
-        ...retiradas.map(r=>({nome:r.nome||'Retirada da reserva',detalhe:'Resgate da reserva',valor:r.valor,data:r.data,cor:'var(--azul)',tipo:'resgate',id:r.id}))
-      ].sort((a,b)=>new Date(b.data||0)-new Date(a.data||0));
-      corpo = '<div style="display:flex;flex-direction:column;gap:3px;">' + (mov.length ? mov.map(x=>'<div class="financeiro-item '+(x.tipo==='resgate'?'acao-editar-resgate':'')+'" '+(x.tipo==='resgate'?'data-id="'+esc(x.id)+'" data-chave="'+esc(chave)+'"':'')+'><span class="financeiro-item-dot" style="background:' + x.cor + '"></span><div class="financeiro-item-info"><div class="financeiro-item-nome">' + esc(x.nome) + '</div><div class="financeiro-item-sub">' + esc(x.detalhe) + ' · ' + new Date(x.data).toLocaleDateString('pt-BR') + '</div></div><strong class="num financeiro-item-value" style="color:' + x.cor + '">' + (x.cor==='var(--verde)'||x.tipo==='resgate'?'+ ':'− ') + brl(x.valor) + '</strong></div>').join('') : '<div class="financeiro-empty">Nenhuma movimentação neste mês.</div>') + '</div>';
+      const mov = [...recebimentos.map(r=>({nome:r.cliente.nome,detalhe:'Recebimento',valor:r.pagamento.valor,data:r.pagamento.data,cor:'var(--verde)'})), ...despesas.map(d=>({nome:d.nome,detalhe:d.categoria||'Despesa',valor:d.valor,data:dataPagamentoDaDespesa(d),cor:'var(--vermelho)'})), ...aportes.map(a=>({nome:a.nome,detalhe:'Aporte',valor:a.valor,data:a.data,cor:'var(--azul)'}))].sort((a,b)=>new Date(b.data||0)-new Date(a.data||0));
+      corpo = '<div style="display:flex;flex-direction:column;gap:3px;">' + (mov.length ? mov.map(x=>'<div class="financeiro-item"><span class="financeiro-item-dot" style="background:' + x.cor + '"></span><div class="financeiro-item-info"><div class="financeiro-item-nome">' + esc(x.nome) + '</div><div class="financeiro-item-sub">' + esc(x.detalhe) + ' · ' + new Date(x.data).toLocaleDateString('pt-BR') + '</div></div><strong class="num financeiro-item-value" style="color:' + x.cor + '">' + (x.cor==='var(--verde)'?'+ ':'− ') + brl(x.valor) + '</strong></div>').join('') : '<div class="financeiro-empty">Nenhuma movimentação neste mês.</div>') + '</div>';
     }
 
     abrirModal(titulo, corpo, () => {
       document.querySelectorAll('#modal-body .acao-editar-despesa').forEach(el => el.addEventListener('click', () => {
         abrirModalDespesa(null, el.dataset.id);
-      }));
-      document.querySelectorAll('#modal-body .acao-editar-resgate').forEach(el => el.addEventListener('click', () => {
-        abrirModalResgateFinanceiro(el.dataset.chave, el.dataset.id);
       }));
     });
   }
@@ -1608,9 +1447,8 @@
     const despesasMes = despesasDoMesFinanceiro(chave);
     const movimentos = [
       ...state.clientes.flatMap(c => pagamentosDoMesCliente(c, chave).map(p => ({tipo:"recebido",nome:c.nome,detalhe:"Pagamento recebido",valor:p.valor,data:p.data,cor:"var(--verde)",pacoteId:p.pacoteId}))),
-      ...despesasMes.map(d => ({tipo:"despesa",nome:d.nome,detalhe:d.categoria || "Despesa",valor:d.valor,data:dataPagamentoDaDespesa(d),cor:"var(--vermelho)",id:d.id,fixaId:d.fixaId,fixa:d.fixa,virtual:d.virtual,paga:d.paga})),
-      ...aportesDoMes(chave).map(a => ({tipo:"aporte",nome:a.nome,detalhe:"Dinheiro guardado",valor:a.valor,data:a.data,cor:"var(--azul)",id:a.id})),
-      ...resgatesDoMes(chave).map(r => ({tipo:"resgate",nome:r.nome || "Retirada da reserva",detalhe:"Resgate da reserva",valor:r.valor,data:r.data,cor:"var(--azul)",id:r.id,chave}))
+      ...despesasMes.map(d => ({tipo:"despesa",nome:d.nome,detalhe:d.categoria || "Despesa",valor:d.valor,data:dataPagamentoDaDespesa(d),cor:"var(--vermelho)",id:d.id,fixaId:d.fixaId,fixa:d.fixa,virtual:d.virtual})),
+      ...aportesDoMes(chave).map(a => ({tipo:"aporte",nome:a.nome,detalhe:"Reserva / investimento",valor:a.valor,data:a.data,cor:"var(--azul)",id:a.id}))
     ].sort((a,b) => new Date(b.data || 0) - new Date(a.data || 0));
     const ultimos = movimentos.slice(0,5);
     const meses = mesesComMovimentacaoFinanceira();
@@ -1618,8 +1456,7 @@
 
     const base = Math.max(t.recebido, 0);
     const pctDespesaVisual = base > 0 ? Math.min((t.despesas / base) * 100, 100) : 0;
-    const aporteLiquidoMes = Math.max(0, t.aportes - t.retiradas);
-    const pctAporteVisual = base > 0 ? Math.min((aporteLiquidoMes / base) * 100, Math.max(0, 100 - pctDespesaVisual)) : 0;
+    const pctAporteVisual = base > 0 ? Math.min((t.aportes / base) * 100, Math.max(0, 100 - pctDespesaVisual)) : 0;
     const pctDisponivelVisual = base > 0 ? Math.max(0, 100 - pctDespesaVisual - pctAporteVisual) : 0;
 
     let h='<section class="card financeiro-card" id="financeiro">';
@@ -1633,7 +1470,7 @@
     h+='</div>';
 
     const saldo = t.disponivel;
-    h+='<div class="financeiro-hero"><div class="financeiro-hero-top"><div><span class="financeiro-hero-label">Saldo disponível para gastar</span><strong class="num financeiro-hero-value" style="color:'+(saldo>=0?'var(--destaqueTexto)':'var(--vermelho)')+'">'+brl(saldo)+'</strong><div class="financeiro-hero-note">Recebido − despesas − guardado + resgates</div><div class="financeiro-hero-formula"><span class="financeiro-formula-chip">Recebido '+brl(t.recebido)+'</span><span class="financeiro-formula-chip">− Despesas '+brl(t.despesas)+'</span><span class="financeiro-formula-chip">− Guardado '+brl(t.aportes)+'</span>'+(t.retiradas>0?'<span class="financeiro-formula-chip">+ Resgatado '+brl(t.retiradas)+'</span>':'')+'</div></div>';
+    h+='<div class="financeiro-hero"><div class="financeiro-hero-top"><div><span class="financeiro-hero-label">Saldo disponível para gastar</span><strong class="num financeiro-hero-value" style="color:'+(saldo>=0?'var(--destaqueTexto)':'var(--vermelho)')+'">'+brl(saldo)+'</strong><div class="financeiro-hero-note">Recebido − despesas − valores guardados</div><div class="financeiro-hero-formula"><span class="financeiro-formula-chip">Recebido '+brl(t.recebido)+'</span><span class="financeiro-formula-chip">− Despesas '+brl(t.despesas)+'</span><span class="financeiro-formula-chip">− Guardado '+brl(t.aportes)+'</span></div></div>';
     h+='<div class="financeiro-mini-meta"><span class="financeiro-mini-meta-label">Meta de receita</span><strong class="num financeiro-mini-meta-value">'+brl(t.recebido)+' <span style="opacity:.5">/</span> '+brl(metaReceita)+'</strong><div class="financeiro-mini-bar"><div class="financeiro-mini-fill" style="width:'+pctReceita+'%"></div></div><span class="financeiro-mini-meta-note">baseada nos clientes ativos</span></div></div></div>';
 
     h+='<div class="financeiro-summary">';
@@ -1646,30 +1483,25 @@
     h+='<div class="financeiro-column">';
     h+='<div class="financeiro-panel"><div class="financeiro-panel-head"><div><div class="financeiro-panel-title">Movimentações recentes</div><span class="financeiro-panel-sub">Entradas, saídas e valores guardados</span></div><button class="financeiro-view-all" id="fin-ver-movimentos">ver tudo</button></div><div class="financeiro-lista">';
     if(!ultimos.length) h+='<div class="financeiro-empty">Nenhuma movimentação neste mês.</div>';
-    ultimos.forEach(x=>{
-      const sinal=x.tipo==='despesa'||x.tipo==='aporte'?'− ':'+ ';
-      const classe=x.tipo==='despesa'?'acao-editar-despesa':x.tipo==='resgate'?'acao-editar-resgate':'';
-      const attrs=x.tipo==='despesa'?'data-id="'+esc(x.id)+'" data-fixa-id="'+esc(x.fixaId||'')+'" data-virtual="'+(x.virtual?'1':'0')+'"':x.tipo==='resgate'?'data-id="'+esc(x.id)+'" data-chave="'+esc(chave)+'"':'';
-      h+='<div class="financeiro-item '+classe+'" '+attrs+'><span class="financeiro-item-dot" style="background:'+x.cor+'"></span><div class="financeiro-item-info"><div class="financeiro-item-nome">'+esc(x.nome)+'</div><div class="financeiro-item-sub">'+esc(x.detalhe)+(x.virtual?(x.paga?' · fixa':' · fixa · prevista'):x.fixa?' · fixa':'')+(x.paga?' · paga ✓':'')+(x.data?' · '+new Date(x.data).toLocaleDateString('pt-BR'):'')+'</div></div><strong class="num financeiro-item-value" style="color:'+x.cor+'">'+sinal+brl(x.valor)+'</strong></div>';
-    });
+    ultimos.forEach(x=>{const sinal=x.tipo==='despesa'||x.tipo==='aporte'?'− ':'+ ';h+='<div class="financeiro-item '+(x.tipo==='despesa'?'acao-editar-despesa':'')+'" '+(x.tipo==='despesa'?'data-id="'+esc(x.id)+'" data-fixa-id="'+esc(x.fixaId||'')+'" data-virtual="'+(x.virtual?'1':'0')+'"':'')+'><span class="financeiro-item-dot" style="background:'+x.cor+'"></span><div class="financeiro-item-info"><div class="financeiro-item-nome">'+esc(x.nome)+'</div><div class="financeiro-item-sub">'+esc(x.detalhe)+(x.virtual?' · fixa · prevista':x.fixa?' · fixa':'')+(x.data?' · '+new Date(x.data).toLocaleDateString('pt-BR'):'')+'</div></div><strong class="num financeiro-item-value" style="color:'+x.cor+'">'+sinal+brl(x.valor)+'</strong></div>';});
     h+='</div>';
     h+='<div class="financeiro-composicao"><div class="financeiro-composicao-head"><span class="financeiro-composicao-title">Destino do dinheiro neste mês</span><span class="num financeiro-composicao-total">'+brl(t.recebido)+'</span></div><div class="financeiro-composicao-bar"><span class="financeiro-composicao-seg despesa" style="width:'+pctDespesaVisual+'%"></span><span class="financeiro-composicao-seg aporte" style="width:'+pctAporteVisual+'%"></span><span class="financeiro-composicao-seg disponivel" style="width:'+pctDisponivelVisual+'%"></span></div><div class="financeiro-composicao-legend"><span class="financeiro-comp-leg"><i class="financeiro-comp-dot" style="background:var(--vermelho)"></i>despesas '+Math.round(pctDespesaVisual)+'%</span><span class="financeiro-comp-leg"><i class="financeiro-comp-dot" style="background:var(--azul)"></i>guardado '+Math.round(pctAporteVisual)+'%</span><span class="financeiro-comp-leg"><i class="financeiro-comp-dot" style="background:var(--verde)"></i>disponível '+Math.round(pctDisponivelVisual)+'%</span></div></div>';
     h+='</div>';
 
     h+='<div class="financeiro-panel"><div class="financeiro-panel-head"><div><div class="financeiro-panel-title">Despesas do mês</div><span class="financeiro-panel-sub">Total '+brl(t.despesas)+'</span></div><button class="financeiro-add" id="btn-nova-despesa" aria-label="Adicionar despesa">＋</button></div><div class="financeiro-lista">';
     if(!despesasMes.length) h+='<div class="financeiro-empty">Nenhuma despesa registrada.<br><button class="financeiro-small-btn" id="fin-empty-despesa">Adicionar despesa</button></div>';
-    despesasMes.slice(0,6).forEach(d=>{h+='<div class="financeiro-item acao-editar-despesa" data-id="'+esc(d.id)+'"><span class="financeiro-item-dot" style="background:var(--vermelho)"></span><div class="financeiro-item-info"><div class="financeiro-item-nome">'+esc(d.nome)+'</div><div class="financeiro-item-sub">'+esc(d.categoria||'Outros')+(d.paga?' · despesa paga ✓':'')+(d.formaPagamento === 'cartao' ? ' · cartão · compra ' + new Date(dataCompraDaDespesa(d)).toLocaleDateString('pt-BR') + ' · pagamento ' + new Date(dataPagamentoDaDespesa(d)).toLocaleDateString('pt-BR') : ' · data ' + new Date(dataPagamentoDaDespesa(d)).toLocaleDateString('pt-BR'))+'</div></div><strong class="num financeiro-item-value" style="color:var(--vermelho)">− '+brl(d.valor)+'</strong></div>';});
+    despesasMes.slice(0,6).forEach(d=>{h+='<div class="financeiro-item acao-editar-despesa" data-id="'+esc(d.id)+'"><span class="financeiro-item-dot" style="background:var(--vermelho)"></span><div class="financeiro-item-info"><div class="financeiro-item-nome">'+esc(d.nome)+'</div><div class="financeiro-item-sub">'+esc(d.categoria||'Outros')+(d.formaPagamento === 'cartao' ? ' · cartão · compra ' + new Date(dataCompraDaDespesa(d)).toLocaleDateString('pt-BR') + ' · paga ' + new Date(dataPagamentoDaDespesa(d)).toLocaleDateString('pt-BR') : ' · paga ' + new Date(dataPagamentoDaDespesa(d)).toLocaleDateString('pt-BR'))+'</div></div><strong class="num financeiro-item-value" style="color:var(--vermelho)">− '+brl(d.valor)+'</strong></div>';});
     if(despesasMes.length>6) h+='<div class="financeiro-empty" style="padding:7px">+'+(despesasMes.length-6)+' outras · <button class="financeiro-small-btn" id="fin-ver-despesas">ver tudo</button></div>';
     h+='</div></div></div>';
 
     h+='<div class="financeiro-column">';
-    h+='<div class="financeiro-panel"><div class="financeiro-panel-head"><div><div class="financeiro-panel-title">Reserva de emergência</div><span class="financeiro-panel-sub">Seu objetivo de segurança</span></div><button class="financeiro-reserva-edit" id="fin-editar-meta">editar</button></div><div class="financeiro-reserva"><div class="financeiro-reserva-ring"><svg viewBox="0 0 92 92"><circle class="financeiro-reserva-ring-track" cx="46" cy="46" r="37"></circle><circle class="financeiro-reserva-ring-fill" cx="46" cy="46" r="37" stroke-dasharray="'+circ+'" stroke-dashoffset="'+offset+'"></circle></svg><div class="financeiro-reserva-ring-center"><strong class="financeiro-reserva-ring-pct">'+pctReserva+'%</strong><span class="financeiro-reserva-ring-label">da meta</span></div></div><div class="financeiro-reserva-info"><span class="financeiro-reserva-label">Acumulado</span><strong class="num financeiro-reserva-value">'+brl(reserva)+'</strong><div class="financeiro-reserva-meta"><span>meta '+brl(metaReserva)+'</span><span>'+(metaReserva>reserva?'faltam '+brl(metaReserva-reserva):metaReserva===0?'defina uma meta':'meta atingida')+'</span></div><div class="financeiro-reserva-actions"><span style="font-size:7.5px;color:var(--cinzaClaro)">Aportes e resgates atualizam o saldo.</span><div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;"><button class="financeiro-small-btn" id="fin-add-aporte">+ guardar</button><button class="financeiro-small-btn" id="fin-retirar-aporte" style="color:var(--vermelho)">− retirar</button></div></div></div></div></div>';
+    h+='<div class="financeiro-panel"><div class="financeiro-panel-head"><div><div class="financeiro-panel-title">Reserva de emergência</div><span class="financeiro-panel-sub">Seu objetivo de segurança</span></div><button class="financeiro-reserva-edit" id="fin-editar-meta">editar</button></div><div class="financeiro-reserva"><div class="financeiro-reserva-ring"><svg viewBox="0 0 92 92"><circle class="financeiro-reserva-ring-track" cx="46" cy="46" r="37"></circle><circle class="financeiro-reserva-ring-fill" cx="46" cy="46" r="37" stroke-dasharray="'+circ+'" stroke-dashoffset="'+offset+'"></circle></svg><div class="financeiro-reserva-ring-center"><strong class="financeiro-reserva-ring-pct">'+pctReserva+'%</strong><span class="financeiro-reserva-ring-label">da meta</span></div></div><div class="financeiro-reserva-info"><span class="financeiro-reserva-label">Acumulado</span><strong class="num financeiro-reserva-value">'+brl(reserva)+'</strong><div class="financeiro-reserva-meta"><span>meta '+brl(metaReserva)+'</span><span>'+(metaReserva>reserva?'faltam '+brl(metaReserva-reserva):metaReserva===0?'defina uma meta':'meta atingida')+'</span></div><div class="financeiro-reserva-actions"><span style="font-size:7.5px;color:var(--cinzaClaro)">Aportes entram aqui.</span><button class="financeiro-small-btn" id="fin-add-aporte">+ guardar</button></div></div></div></div>';
 
     h+='</div></div>';
 
-    h+='<div class="financeiro-history"><div class="financeiro-history-head"><div><div class="financeiro-history-title">Histórico financeiro</div><div class="financeiro-history-sub">Meses com movimentações reais.</div></div></div><div class="financeiro-history-header"><span>Mês</span><span>Recebido</span><span>Despesas</span><span>Reserva líquida</span><span>Disponível</span></div>';
+    h+='<div class="financeiro-history"><div class="financeiro-history-head"><div><div class="financeiro-history-title">Histórico financeiro</div><div class="financeiro-history-sub">Meses com movimentações reais.</div></div></div><div class="financeiro-history-header"><span>Mês</span><span>Recebido</span><span>Despesas</span><span>Guardado</span><span>Disponível</span></div>';
     if(!meses.length) h+='<div class="financeiro-empty">Nenhum mês com movimentações ainda.</div>';
-    meses.forEach(mes=>{const x=dadosFinanceirosMes(mes),obj=obterMesFinanceiro(mes,false),marcado=obj?.fechado,reservaLiquida=x.aportes-x.retiradas;h+='<div class="financeiro-history-row acao-fin-mes" data-chave="'+esc(mes)+'"><span class="financeiro-history-month">'+esc(nomeMesChave(mes))+(marcado?'<span class="financeiro-history-check">✓</span>':'')+'</span><span class="num financeiro-history-value positive">'+brl(x.recebido)+'</span><span class="num financeiro-history-value negative">'+brl(x.despesas)+'</span><span class="num financeiro-history-value '+(reservaLiquida>=0?'invest':'negative')+'">'+brl(reservaLiquida)+'</span><span class="num financeiro-history-value '+(x.disponivel>=0?'positive':'negative')+'">'+brl(x.disponivel)+'</span></div>';});
+    meses.forEach(mes=>{const x=dadosFinanceirosMes(mes),obj=obterMesFinanceiro(mes,false),marcado=obj?.fechado;h+='<div class="financeiro-history-row acao-fin-mes" data-chave="'+esc(mes)+'"><span class="financeiro-history-month">'+esc(nomeMesChave(mes))+(marcado?'<span class="financeiro-history-check">✓</span>':'')+'</span><span class="num financeiro-history-value positive">'+brl(x.recebido)+'</span><span class="num financeiro-history-value negative">'+brl(x.despesas)+'</span><span class="num financeiro-history-value invest">'+brl(x.aportes)+'</span><span class="num financeiro-history-value '+(x.disponivel>=0?'positive':'negative')+'">'+brl(x.disponivel)+'</span></div>';});
     h+='</div></section>';
     return h;
   }
@@ -2247,8 +2079,6 @@
     on("#btn-ir-financeiro", "click", () => document.getElementById("financeiro")?.scrollIntoView({ behavior: "smooth", block: "start" }));
     on("#fin-add-aporte", "click", () => abrirModalAporteFinanceiro(state.financeiro.mesSelecionado || mesAtualFinanceiro(), null));
     on("#fin-acao-aporte", "click", () => abrirModalAporteFinanceiro(state.financeiro.mesSelecionado || mesAtualFinanceiro(), null));
-    on("#fin-retirar-aporte", "click", () => abrirModalResgateFinanceiro(state.financeiro.mesSelecionado || mesAtualFinanceiro(), null));
-    on(".acao-editar-resgate", "click", (e) => abrirModalResgateFinanceiro(e.currentTarget.dataset.chave || state.financeiro.mesSelecionado || mesAtualFinanceiro(), e.currentTarget.dataset.id));
     on("#fin-acao-despesa", "click", () => abrirModalDespesa(state.financeiro.mesSelecionado || mesAtualFinanceiro()));
     on("#fin-empty-despesa", "click", () => abrirModalDespesa(state.financeiro.mesSelecionado || mesAtualFinanceiro()));
     on("#fin-acao-receita", "click", () => abrirModalFinanceiroDetalhe("recebido", state.financeiro.mesSelecionado || mesAtualFinanceiro()));
@@ -2451,7 +2281,6 @@
     const dataCompraPadrao = item?.dataCompra ? new Date(item.dataCompra).toISOString().slice(0,10) : (item?.quando ? new Date(item.quando).toISOString().slice(0,10) : (chave === mesAtualFinanceiro() ? new Date().toISOString().slice(0,10) : chave + '-01'));
     const dataPagamentoPadrao = item?.dataPagamento ? new Date(item.dataPagamento).toISOString().slice(0,10) : (item?.quando ? new Date(item.quando).toISOString().slice(0,10) : dataCompraPadrao);
     const fixaMarcada = !!item?.fixaId || !!item?.id && !!despesaFixaDoId(item.id);
-    const pagaNesteMes = !!(fixaMarcada && item?.fixaId && despesaFixaDoId(item.fixaId)?.pagaMeses?.includes(chave));
 
     abrirModal(item ? 'Editar despesa' : 'Nova despesa',
       '<div style="display:flex;flex-direction:column;gap:9px;">' +
@@ -2469,13 +2298,8 @@
       '</div>' +
       ((!item || (itemReal && !fixaMarcada)) ? '<label style="display:flex;align-items:center;gap:8px;font-size:9px;color:var(--cinza);cursor:pointer;"><input id="nd-fixa" type="checkbox" style="accent-color:var(--verde);"' + ((!item && false) || fixaMarcada ? ' checked' : '') + '> despesa fixa · repetir automaticamente todos os meses</label>' : (fixaMarcada ? '<div style="font-size:8.5px;color:var(--cinzaClaro);background:var(--inputBg);padding:9px 10px;border-radius:9px;">Despesa fixa. As datas de compra e pagamento definem o ciclo; os próximos meses acompanham essa configuração.</div>' : '')) +
       '<button class="btn btn-dark" id="nd-salvar" style="margin-top:4px;">' + (item ? 'salvar alterações' : 'adicionar despesa') + '</button>' +
-      (itemReal ? '<button class="btn" id="nd-remover" style="color:var(--vermelho);">' + (fixaMarcada ? 'remover lançamento deste mês' : 'remover despesa') + '</button>' : '') +
-      (fixaMarcada && item?.fixaId ?
-        '<div style="height:1px;background:var(--divisor);margin:4px 0;"></div>' +
-        '<div style="font-size:9px;color:var(--cinzaClaro);line-height:1.5;">As alterações abaixo valem apenas para este mês ou para a recorrência, sem apagar os lançamentos dos meses anteriores.</div>' +
-        '<button class="btn" id="nd-fixa-paga" style="color:' + (pagaNesteMes ? 'var(--verde)' : 'var(--texto)') + '">' + (pagaNesteMes ? '✓ paga neste mês · desfazer' : 'marcar como paga neste mês') + '</button>' +
-        (!itemReal ? '<button class="btn" id="nd-remover-fixa-mes" style="color:var(--vermelho);">remover só deste mês</button>' : '') +
-        '<button class="btn" id="nd-desativar-fixa" style="color:var(--vermelho);">parar recorrência após este mês</button>' : '') +
+      (itemReal ? '<button class="btn" id="nd-remover" style="color:var(--vermelho);">remover lançamento</button>' : '') +
+      (fixaMarcada && item?.fixaId ? '<button class="btn" id="nd-desativar-fixa" style="color:var(--vermelho);">desativar recorrência</button>' : '') +
       '</div>',
       () => {
         document.getElementById('nd-forma').addEventListener('change', () => {
@@ -2515,9 +2339,7 @@
           fecharModal();
         });
         if (itemReal && document.getElementById('nd-remover')) document.getElementById('nd-remover').addEventListener('click', () => { removerDespesa(itemReal.id); fecharModal(); });
-        if (fixaMarcada && item?.fixaId && document.getElementById('nd-fixa-paga')) document.getElementById('nd-fixa-paga').addEventListener('click', () => { alternarDespesaFixaPaga(item.fixaId, chave); fecharModal(); });
-        if (fixaMarcada && item?.fixaId && document.getElementById('nd-remover-fixa-mes')) document.getElementById('nd-remover-fixa-mes').addEventListener('click', () => { removerDespesaFixaMes(item.fixaId, chave); fecharModal(); });
-        if (fixaMarcada && item?.fixaId && document.getElementById('nd-desativar-fixa')) document.getElementById('nd-desativar-fixa').addEventListener('click', () => { desativarDespesaFixa(item.fixaId, chave); fecharModal(); });
+        if (fixaMarcada && item?.fixaId && document.getElementById('nd-desativar-fixa')) document.getElementById('nd-desativar-fixa').addEventListener('click', () => { desativarDespesaFixa(item.fixaId); fecharModal(); });
       }
     );
   }
